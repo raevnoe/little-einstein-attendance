@@ -3,7 +3,7 @@
 A Progressive Web-Based Application RFID Attendance Monitoring and Student Performance
 Evaluation System with SMS Notification for the Kindergarten of Little Einstein Discovery School.
 
-> Capstone prototype. Built phase-by-phase. **Completed through Phase 9 — Fetchers and dismissal OTP verification (pending browser test). Phase 8 SMS via IPROG SMS. Phase 6B (physical UHF RFID reader, keyboard emulation) implemented, pending physical reader test.**
+> Capstone prototype. Built phase-by-phase. **Phases 1–12 complete and tested.** Next: Phase 13 — Testing and Client Validation.
 
 ## Architecture
 
@@ -155,6 +155,15 @@ and match that role.
 | POST   | `/api/dismissals/:id/release`      | admin, teacher     | Confirm handover after verification `{ requestNumber }` |
 | GET    | `/api/admin/fetchers?status=`      | admin              | Every Fetcher with parent and children names        |
 | POST   | `/api/admin/fetchers/:fetcherId/deactivate` | admin    | Deactivate any Fetcher                              |
+| GET    | `/api/admin/users`                 | admin              | Every account (sorted by name)                      |
+| POST   | `/api/admin/users`                 | admin              | Create account `{ email, firstName, lastName, role, mobileNumber? }` (password set by the person via email link) |
+| GET    | `/api/admin/overview`              | admin              | Dashboard counts (incl. today's SMS sent/failed/skipped) |
+| GET    | `/api/admin/audit-logs?from=&to=&...` | admin           | Audit log (read-only; max 31 days per request)      |
+| GET    | `/api/reports/today`               | admin, teacher     | Today's attendance, evaluation and dismissal counts |
+| GET    | `/api/reports/attendance?from=&to=&section=&studentId=` | admin, teacher | Attendance report (max 31 days) |
+| GET    | `/api/reports/performance?from=&to=&section=&studentId=&area=` | admin, teacher | Performance report (max 31 days) |
+| GET    | `/api/notifications?after=`        | admin, teacher, parent | Own in-app notifications (the bell), newest first |
+| POST   | `/api/notifications/seen`          | admin, teacher, parent | Mark own notifications seen `{ upTo }`         |
 
 RFID UIDs are normalized (whitespace, `:` and `-` removed, uppercased) and must be 4–64 hex
 characters. A student has at most one card; every assignment change runs in a Firestore
@@ -276,12 +285,16 @@ node --env-file=.env scripts/createUser.js --email admin@school.test --password 
 3. Role-based authorization ✅
 4. Student management ✅
 5. RFID card management ✅
-6. Attendance (6A: foundation + manual UID input ✅; 6B: UHF reader, keyboard emulation ✅ pending physical test)
+6. Attendance (6A: foundation + manual UID input ✅; 6B: UHF reader, keyboard emulation ✅)
 7. Performance evaluation ✅
-8. PhilSMS SMS notification ✅ (pending browser test)
-9. Fetcher + OTP dismissal ✅ (pending browser test)
-10. Reports
-11. Audit logs + security hardening
-12. PWA refinement
-13. Testing
+8. SMS notification (IPROG SMS; PhilSMS kept as legacy) ✅
+9. Fetcher + OTP dismissal ✅
+10. Reports ✅
+11. Audit logs + security hardening ✅
+12. PWA and offline support ✅
+13. Testing and client validation — next
 14. Deployment / demo preparation
+
+Added along the way (developer requests): UI redesign, admin account management, RFID card registration with
+the reader, live updates and notification sounds, in-app notification bell, page addresses per role, Performance
+Evaluation quick phrases / star words / "Save all", and the Fetcher relationship dropdown.
