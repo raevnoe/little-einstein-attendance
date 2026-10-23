@@ -1,0 +1,20 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Express API for the Little Einstein attendance system",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env src/index.js",
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "user:create": "node --env-file-if-exists=.env scripts/createUser.js",
+    "test": "node --test --experimental-test-module-mocks test/*.test.js"
+  },
+  "dependencies": {
+    "@led/shared": "*",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.4.0"
+  }
+}

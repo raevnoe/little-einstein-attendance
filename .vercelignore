@@ -1,0 +1,16 @@
+# Files NOT uploaded by `vercel deploy` (gitignore syntax). This project is not a Git repository,
+# so this list is the only thing keeping secrets out of the upload: never remove the .env lines.
+**/.env
+**/.env.*
+**/*serviceAccount*.json
+**/*service-account*.json
+**/*firebase-adminsdk*.json
+**/node_modules
+.firebase
+# The PWA is deployed to Firebase Hosting, not Vercel. Only client/package.json is needed
+# (npm workspaces require every workspace manifest).
+client/*
+!client/package.json
+server/test
+server/scripts
+*.md

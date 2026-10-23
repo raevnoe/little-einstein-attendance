@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+/*
+ * Script heading font (Stage 5): Caveat Bold, SIL Open Font License 1.1 (see
+ * assets/fonts/Caveat-OFL.txt), from the @fontsource/caveat 5.3.0 package, latin subset only.
+ * It is bundled with the app (hashed asset, precached by the service worker like the CSS), so
+ * it works offline and nothing is loaded from a font service. Use `font-script` ONLY for short
+ * headings and decorative phrases - never for paragraphs, instructions, forms, tables or numbers.
+ */
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/caveat-latin-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Brand palette SAMPLED from the official logo (client/brand/official-logo.png). These are measured
+ * pixel colours, not official colour codes from the school; replace them if the school provides some.
+ *   Logo samples: navy #2e3192, purple #662d91, yellow #f9ed32, green #39b54a, cyan #00aeef,
+ *   light blue #77cff2.
+ * Every screen, icon and illustration uses these tokens (bg-brand-600, fill-leaf-400, ...),
+ * so changing the hex values below re-themes the whole application.
+ *   brand = navy, primary (buttons, navigation, headings)   leaf  = green, success / "at school"
+ *   sky   = cyan / light blue, information accents          sun   = yellow, highlights (never text)
+ *   grape = purple, secondary accent                        mist  = neutral gray
+ *   star  = star ratings
+ * Text contrast on white (WCAG AA needs 4.5:1): brand-500 7.0, brand-600 10.7, brand-900 16.3,
+ * leaf-700 5.4, sky-700 5.4, grape-500 8.9, sun-700 on sun-50 6.3. The pure logo green, cyan,
+ * yellow and light blue (leaf-400, sky-500, sun-400, sky-300) are for fills and decoration only.
+ */
+@theme {
+  --font-script: 'Caveat', 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+
+  --color-paper: #ffffff;
+  --color-canvas: #f6f7fc;
+
+  --color-brand-50: #eef0fa;
+  --color-brand-100: #e0e2f5;
+  --color-brand-200: #c3c6eb;
+  --color-brand-300: #9b9fdb;
+  --color-brand-500: #4a4eae;
+  --color-brand-600: #2e3192;
+  --color-brand-700: #25287a;
+  --color-brand-800: #1f2166;
+  --color-brand-900: #171a4d;
+
+  --color-leaf-50: #e9f7eb;
+  --color-leaf-100: #d3efd7;
+  --color-leaf-300: #8fd59a;
+  --color-leaf-400: #39b54a;
+  --color-leaf-700: #1d7a2c;
+
+  --color-sky-50: #e6f7fd;
+  --color-sky-100: #c9eefb;
+  --color-sky-300: #77cff2;
+  --color-sky-500: #00aeef;
+  --color-sky-700: #00729e;
+
+  --color-sun-50: #fefbd8;
+  --color-sun-100: #fdf6a6;
+  --color-sun-400: #f9ed32;
+  --color-sun-700: #6b5d00;
+
+  --color-grape-50: #f3edf8;
+  --color-grape-100: #e6d9f1;
+  --color-grape-500: #662d91;
+  --color-grape-700: #4e226f;
+
+  --color-mist-400: #a5a8ac;
+
+  --color-star: #d9a43c;
+  --color-star-empty: #c3c6eb;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/*
+ * Printing (Phase 10 reports). Browsers' "Save as PDF" uses these too, so no PDF library is
+ * needed. Navigation, filters and buttons carry `print:hidden`; here the page itself is
+ * made plain: white background, no shadows, and cards that do not split across pages.
+ */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  main section,
+  main [class*='shadow'] {
+    box-shadow: none !important;
+  }
+
+  thead {
+    display: table-header-group; /* repeat table headings on every printed page */
+  }
+
+  tr,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}

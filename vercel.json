@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci --omit=dev --workspace=server --include-workspace-root=false",
+  "buildCommand": "node -e \"const fs = require('fs'); fs.mkdirSync('vercel-static', { recursive: true }); fs.writeFileSync('vercel-static/robots.txt', 'User-agent: *\\nDisallow: /\\n')\"",
+  "outputDirectory": "vercel-static",
+  "regions": ["sin1"],
+  "functions": {
+    "api/index.mjs": { "maxDuration": 30 }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" }
+  ]
+}

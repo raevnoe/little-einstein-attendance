@@ -1,0 +1,10 @@
+{
+  "name": "@led/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Constants shared by the client and server (no secrets, no runtime dependencies).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  }
+}

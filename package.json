@@ -1,0 +1,26 @@
+{
+  "name": "little-einstein-attendance",
+  "private": true,
+  "description": "PWA RFID Attendance Monitoring and Student Performance Evaluation System with SMS Notification - Little Einstein Discovery School (Kindergarten)",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "engines": {
+    "node": ">=22.9.0"
+  },
+  "scripts": {
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "start:server": "npm run start -w server",
+    "build": "npm run build -w client",
+    "preview": "npm run preview -w client",
+    "lint": "npm run lint -w client",
+    "user:create": "npm run user:create -w server --",
+    "test": "npm run test -w client -w server"
+  },
+  "overrides": {
+    "jwks-rsa": "3.2.2"
+  }
+}

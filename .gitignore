@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+
+# Environment variables (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Firebase Admin service account keys (never commit)
+*serviceAccount*.json
+*service-account*.json
+*firebase-adminsdk*.json
+
+# Firebase local tooling
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.sw?
+
+# Local UI screenshots (review only)
+.screenshots/
+vercel-static/
+.vercel/
+
+.vercel
+.env*
+
+# Placeholder env files (no secrets) ARE committed; this must stay below every .env rule above.
+!.env.example
+
+# Project archives (may contain .env copies) - never commit
+*.zip
