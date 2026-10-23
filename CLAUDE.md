@@ -91,17 +91,17 @@ Completed:
 * Phase 5: RFID Card Management
 * Phase 6A: Attendance Foundation + manual/mock RFID UID input
 * Phase 7: Performance Evaluation (browser test passed)
-* Phase 8: SMS Notifications via PhilSMS (automated tests pass; pending developer browser test/approval)
-* Phase 6B: Physical UHF RFID reader integration, keyboard-emulation mode (automated tests pass; pending developer physical reader test)
+* Phase 8: SMS Notifications (PhilSMS, now IPROG SMS) - tested by the developer
+* Phase 6B: Physical UHF RFID reader integration, keyboard-emulation mode - tested by the developer
 * Phase 9: Fetcher Management and Dismissal OTP Verification (browser test passed)
 * Phase 10: Reports and Dashboard Improvements (browser test passed)
 * Phase 11: Audit Logs and Security Hardening (browser test passed)
 
-Current phase:
+* Phase 12: PWA and Offline Support - tested by the developer
 
-* Phase 12: PWA and Offline Support (implemented; automated tests and a headless-Chrome check of the
-  production build pass; PENDING developer browser test with signed-in roles - not complete until the
-  developer confirms it). Do not start Phase 13.
+Developer confirmation (2026-10-24): Phases 1-12 are all tested and complete. Do not re-test or re-verify them;
+test only new changes. Next: Phase 13 (Testing and Client Validation) when the developer requests it - its
+deliverables are being decided by the developer's team (see the paper/proposal discussion).
 
 Planned order:
 
@@ -1371,13 +1371,13 @@ Phase 3 — COMPLETE
 Phase 4 — COMPLETE
 Phase 5 — COMPLETE
 Phase 6A — COMPLETE (attendance foundation + manual/mock RFID UID input)
-Phase 6B — IMPLEMENTED, PENDING DEVELOPER PHYSICAL READER TEST (WYUAN UHF60U, keyboard emulation)
+Phase 6B — COMPLETE (WYUAN UHF60U, keyboard emulation; tested by the developer)
 Phase 7 — COMPLETE (browser test passed)
-Phase 8 — COMPLETE, PENDING DEVELOPER BROWSER TEST (PhilSMS SMS notifications; see §16)
+Phase 8 — COMPLETE (SMS notifications, now IPROG SMS; tested by the developer; see §16)
 Phase 9 — COMPLETE (Fetchers + dismissal OTP; see §18)
 Phase 10 — COMPLETE (reports + dashboards; see summary below)
 Phase 11 — COMPLETE (audit logs + hardening; browser test passed; see summary below)
-Phase 12 — IMPLEMENTED, PENDING DEVELOPER BROWSER TEST (PWA + offline; see summary below)
+Phase 12 — COMPLETE (PWA + offline; tested by the developer; see summary below)
 Phase 13+ — NOT STARTED
 ```
 
@@ -1393,7 +1393,8 @@ Phase 8 summary (details in §16):
   synchronously during the scan request (bounded by a 10 s timeout); no automatic retry of
   failed SMS; notification records are not shown in a UI yet.
 
-Current target: Phase 12 browser testing by the developer. Do not start Phase 13 until requested.
+Current target: Phases 1-12 complete and tested (developer, 2026-10-24). Do not start Phase 13 until requested.
+Version control: private GitHub repo https://github.com/raevnoe/little-einstein-attendance (branch main).
 
 Phase 6B summary: the WYUAN UHF60U (USB `VID_FFFF&PID_0035`, no COM port) runs in keyboard-emulation
 mode: it types the card UID and presses Enter. On the staff Attendance page (today),
