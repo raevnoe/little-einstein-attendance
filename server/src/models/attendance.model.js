@@ -7,7 +7,8 @@
 //   status        string     checked-in | checked-out
 //   timeIn        Timestamp  first accepted scan of the day
 //   timeOut       Timestamp? second accepted scan (after the debounce period)
-//   entrySource   string     where the time-in scan came from (e.g. manual-test)
+//   entrySource   string     how the time-in UID reached the server: rfid-reader | manual-entry
+//                            (reported by the screen, not proof); manual-test = before 2026-10-26
 //   exitSource    string?
 //   entryRfidUid  string     normalized card UID used for time-in (staff only)
 //   exitRfidUid   string?

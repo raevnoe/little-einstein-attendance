@@ -1401,8 +1401,14 @@ mode: it types the card UID and presses Enter. On the staff Attendance page (tod
 `ReaderScanPanel` collects those keystrokes with `client/src/lib/rfidKeyboardScanner.js` (ignores
 text fields, shortcuts and slow typing) and submits through `client/src/lib/attendanceScan.js`, the
 same function the manual UID fallback uses -> `POST /api/attendance/scan` -> `processRfidScan()`.
-No backend logic changed; recorded `entrySource`/`exitSource` stays `manual-test` because the browser
-cannot prove a UID came from the reader. One reader only; no entry/exit reader identification.
+Scan source (developer request, 2026-10-26): the screen sends an allow-listed `method` with each scan - "reader"
+(ReaderScanPanel) or "manual" (ManualScanPanel; also when absent) - and the SERVER maps it (`SCAN_SOURCE_BY_METHOD`,
+shared/src/attendance.js; `scanSourceFor` in routes/attendance.routes.js) to `entrySource`/`exitSource` =
+`rfid-reader` | `manual-entry`; any other value -> 400 `validation/invalid-scan-method`, nothing recorded. It is
+REPORTED BY THE SCREEN, not proof (the reader types like a keyboard) and changes no attendance rule. Records before this
+keep `manual-test` (unknown source). Audit details carry `source` for time-in/out and rejected scans; the staff
+Attendance list shows a "typed" mark beside manual-entry times; parents never see sources. Tests:
+server/test/attendanceSource.test.js. One reader only; no entry/exit reader identification.
 Do not add node-hid/serial/WinUSB or reverse-engineer the vendor HID interface unless requested.
 Client unit tests: `npm test` (Node built-in test runner).
 

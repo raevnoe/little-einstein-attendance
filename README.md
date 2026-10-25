@@ -137,7 +137,7 @@ and match that role.
 | POST   | `/api/rfid-cards/:uid/deactivate`  | admin              | Deactivate (also unassigns)                         |
 | POST   | `/api/rfid-cards/:uid/reactivate`  | admin              | Reactivate (returns unassigned)                     |
 | GET    | `/api/attendance?date=&q=&status=` | admin, teacher     | Daily Attendance roster (default: today)            |
-| POST   | `/api/attendance/scan`             | admin, teacher     | TESTING: process a typed RFID UID `{ "uid": "..." }` |
+| POST   | `/api/attendance/scan`             | admin, teacher     | Process a scanned/typed UID `{ "uid": "...", "method": "reader" | "manual" }` (stored as rfid-reader / manual-entry) |
 | GET    | `/api/parent/children/:studentId/attendance` | parent  | Own child's last 30 days (404 for anyone else's)  |
 | GET    | `/api/performance?studentId=&date=&area=` | admin, teacher | Performance evaluations (no student/date = today) |
 | GET    | `/api/performance/:id`             | admin, teacher     | One evaluation (`{studentId}_{date}_{area}`)       |

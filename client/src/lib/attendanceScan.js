@@ -2,11 +2,12 @@
 // emulation) and the manual UID fallback call submitAttendanceScan(), which posts the raw
 // UID to POST /api/attendance/scan -> processRfidScan() on the server. The server decides
 // everything else (UID normalization/validation, card, student, date, time in/out,
-// debounce, SMS); the browser only sends the UID and shows the result.
+// debounce, SMS); the browser only sends the UID, says which input it came from (`method`:
+// "reader" or "manual", stored by the server as rfid-reader / manual-entry) and shows the result.
 //
 // `request` is injected (the app passes apiRequest) so this module has no Firebase or
 // Vite dependency and can be tested with Node's built-in test runner.
-import { SCAN_OUTCOMES } from '@led/shared';
+import { SCAN_METHODS, SCAN_OUTCOMES } from '@led/shared';
 import { OFFLINE_MESSAGE } from './format.js';
 
 export const SCAN_TONES = Object.freeze({
@@ -37,18 +38,19 @@ function scanDetails(scan) {
 }
 
 /**
- * Sends one scanned/typed UID to the server. Never throws.
+ * Sends one scanned/typed UID to the server. Never throws. `method`: SCAN_METHODS.READER from the
+ * reader panel, SCAN_METHODS.MANUAL (default) from the typed-UID form.
  * Returns { tone, text, sms, outcome, studentName, attendance, offline } for display;
  * `outcome` is null when no scan result came back.
  */
-export async function submitAttendanceScan(rawUid, { request, isOnline = browserIsOnline }) {
+export async function submitAttendanceScan(rawUid, { request, isOnline = browserIsOnline, method = SCAN_METHODS.MANUAL }) {
   const uid = typeof rawUid === 'string' ? rawUid.trim() : '';
   const noScan = { sms: null, outcome: null, studentName: null, attendance: null, offline: false };
   if (!uid) return { ...noScan, tone: SCAN_TONES.REJECTED, text: 'Enter an RFID card UID.' };
   if (!isOnline()) return { ...noScan, tone: SCAN_TONES.REJECTED, text: OFFLINE_MESSAGE, offline: true };
 
   try {
-    const { scan } = await request('/attendance/scan', { method: 'POST', body: { uid } });
+    const { scan } = await request('/attendance/scan', { method: 'POST', body: { uid, method } });
     const ignored = scan.outcome === SCAN_OUTCOMES.DUPLICATE_IGNORED;
     return {
       tone: ignored ? SCAN_TONES.IGNORED : SCAN_TONES.ACCEPTED,

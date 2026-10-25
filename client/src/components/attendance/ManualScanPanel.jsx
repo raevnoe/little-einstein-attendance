@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SCAN_METHODS } from '@led/shared';
 import { apiRequest } from '../../lib/apiClient.js';
 import { SCAN_TONES, submitAttendanceScan } from '../../lib/attendanceScan.js';
 import ScanResultMessage from './ScanResultMessage.jsx';
@@ -20,11 +21,11 @@ export default function ManualScanPanel({ onScanned }) {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!uid.trim()) {
-      setResult(await submitAttendanceScan(uid, { request: apiRequest }));
+      setResult(await submitAttendanceScan(uid, { request: apiRequest, method: SCAN_METHODS.MANUAL }));
       return;
     }
     setSubmitting(true);
-    const scanResult = await submitAttendanceScan(uid, { request: apiRequest });
+    const scanResult = await submitAttendanceScan(uid, { request: apiRequest, method: SCAN_METHODS.MANUAL });
     setResult(scanResult);
     if (scanResult.tone === SCAN_TONES.ACCEPTED) setUid('');
     setSubmitting(false);

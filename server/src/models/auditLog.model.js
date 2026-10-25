@@ -52,7 +52,7 @@ const DETAIL_FIELDS = {
   'rfid.card.unassigned': RFID,
   'rfid.card.deactivated': RFID,
   'rfid.card.reactivated': [],
-  'rfid.scan.rejected': ['scanOutcome', 'studentId'],
+  'rfid.scan.rejected': ['scanOutcome', 'studentId', 'source'],
   'attendance.time-in': ['studentId', 'schoolDate', 'source'],
   'attendance.time-out': ['studentId', 'schoolDate', 'source'],
   'performance.created': PERFORMANCE,

@@ -77,8 +77,8 @@ function decide(record, nowMs, debounceMs) {
 }
 
 /**
- * Processes one RFID scan. `source` is set by the SERVER code calling this (e.g. the
- * manual-test route or, later, the reader adapter), never taken from a client. `ctx` is
+ * Processes one RFID scan. `source` is chosen by the SERVER code calling this (the scan route maps
+ * the screen's allow-listed method to rfid-reader / manual-entry), never copied from a client. `ctx` is
  * auditContext(req) of the staff member whose session submitted the scan.
  * Audit (Phase 11): time-in/time-out are audited in the scan transaction; rejected scans are
  * audited best effort (same card + outcome at most once per 10 minutes); debounced repeats are
@@ -200,7 +200,7 @@ async function logged(scan, source, ctx) {
       outcome: 'failure',
       target: { type: 'rfidCard', id: scan.uid },
       reason: `attendance/${scan.outcome}`,
-      details: { scanOutcome: scan.outcome, studentId: scan.student?.studentId ?? null },
+      details: { scanOutcome: scan.outcome, studentId: scan.student?.studentId ?? null, source },
     }, { suppressKey: `scan|${scan.outcome}|${scan.uid}`, windowMs: UNKNOWN_SCAN_WINDOW_MS });
     // Admins' bell: only when the audit entry was written (same 10-minute suppression), and at
     // most one item per card + reason + day (see inbox.service.js).

@@ -26,7 +26,19 @@ export const SCAN_OUTCOMES = Object.freeze({
   STUDENT_INACTIVE: 'student-inactive',
 });
 
-// Where a scan came from. Only the server sets this; clients cannot choose it.
+// Where a scan came from, stored as attendance entrySource / exitSource. The SERVER chooses the
+// stored value from an allow-listed `method` the staff screen reports. The browser cannot prove
+// a UID came from the reader (the reader types like a keyboard), so this is "reported by the
+// screen", not proof - it labels the record and changes nothing else.
 export const SCAN_SOURCES = Object.freeze({
-  MANUAL_TEST: 'manual-test', // development/testing UID entry in the staff UI
+  RFID_READER: 'rfid-reader', // the UHF RFID Reader panel on the Attendance page
+  MANUAL_ENTRY: 'manual-entry', // the "type the UID" fallback form
+  MANUAL_TEST: 'manual-test', // legacy: every scan before 2026-10-26 (reader and typed alike)
+});
+
+// What the Attendance page sends as `method` with each scan, and the source each one records.
+export const SCAN_METHODS = Object.freeze({ READER: 'reader', MANUAL: 'manual' });
+export const SCAN_SOURCE_BY_METHOD = Object.freeze({
+  [SCAN_METHODS.READER]: SCAN_SOURCES.RFID_READER,
+  [SCAN_METHODS.MANUAL]: SCAN_SOURCES.MANUAL_ENTRY,
 });

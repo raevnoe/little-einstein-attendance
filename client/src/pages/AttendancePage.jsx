@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ATTENDANCE_STATUS } from '@led/shared';
+import { ATTENDANCE_STATUS, SCAN_SOURCES } from '@led/shared';
 import { apiRequest } from '../lib/apiClient.js';
 import { formatDate, formatTime } from '../lib/format.js';
 import { browserIsIdle, createPoller } from '../lib/poller.js';
@@ -17,6 +17,24 @@ const SUMMARY_TILES = [
   { key: 'absent', label: 'No time in', dot: 'bg-mist-400', border: 'border-brand-100' },
   { key: 'total', label: 'Students', dot: 'bg-sky-500', border: 'border-sky-100' },
 ];
+
+/**
+ * A recorded time, plus a small "typed" mark when that scan came from the typed-UID form instead of
+ * the reader (as reported by the screen). Older records (manual-test) carry no mark: their source is
+ * unknown.
+ */
+function ScanTime({ time, source, timeZone }) {
+  const formatted = formatTime(time, timeZone);
+  if (!time || source !== SCAN_SOURCES.MANUAL_ENTRY) return formatted;
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      {formatted}
+      <span title="The card UID was typed, not scanned" className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200">
+        typed<span className="sr-only"> (card UID entered by hand, not scanned)</span>
+      </span>
+    </span>
+  );
+}
 
 const SEARCH_DELAY_MS = 300;
 // Keeps today's list current for scans made on OTHER devices; this device's own scans refresh it at once.
@@ -170,8 +188,8 @@ export default function AttendancePage() {
                         {!s.active && <span className="ml-2 text-xs font-normal text-brand-500">(inactive)</span>}
                       </td>
                       <td className={`${TD} text-brand-700`}>{s.section}</td>
-                      <td className={`${TD} tabular-nums`}>{formatTime(a?.timeIn, data.timeZone)}</td>
-                      <td className={`${TD} tabular-nums`}>{formatTime(a?.timeOut, data.timeZone)}</td>
+                      <td className={`${TD} tabular-nums`}><ScanTime time={a?.timeIn} source={a?.entrySource} timeZone={data.timeZone} /></td>
+                      <td className={`${TD} tabular-nums`}><ScanTime time={a?.timeOut} source={a?.exitSource} timeZone={data.timeZone} /></td>
                       <td className={TD}><AttendanceStatusBadge status={rowStatus} /></td>
                     </tr>
                   ))}
@@ -198,11 +216,11 @@ export default function AttendancePage() {
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                     <div className="rounded-xl bg-canvas px-3 py-2">
                       <dt className="text-xs font-semibold text-brand-500">Time In</dt>
-                      <dd className="font-semibold tabular-nums text-brand-900">{formatTime(a?.timeIn, data.timeZone)}</dd>
+                      <dd className="font-semibold tabular-nums text-brand-900"><ScanTime time={a?.timeIn} source={a?.entrySource} timeZone={data.timeZone} /></dd>
                     </div>
                     <div className="rounded-xl bg-canvas px-3 py-2">
                       <dt className="text-xs font-semibold text-brand-500">Time Out</dt>
-                      <dd className="font-semibold tabular-nums text-brand-900">{formatTime(a?.timeOut, data.timeZone)}</dd>
+                      <dd className="font-semibold tabular-nums text-brand-900"><ScanTime time={a?.timeOut} source={a?.exitSource} timeZone={data.timeZone} /></dd>
                     </div>
                   </dl>
                 </li>

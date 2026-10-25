@@ -250,7 +250,7 @@ describe('RFID scans, attendance and SMS', () => {
     assertEntry(timeIn, {
       eventType: 'attendance.time-in', actorUid: 'teacher1', role: 'teacher', target: { type: 'attendance', id: `${ANA}_${today}` },
     });
-    assert.deepEqual(timeIn.details, { studentId: ANA, schoolDate: today, source: 'manual-test' });
+    assert.deepEqual(timeIn.details, { studentId: ANA, schoolDate: today, source: 'manual-entry' });
 
     // Debounced repeat: nothing recorded.
     assert.equal((await scan(CARD_A)).status, 200);
@@ -291,7 +291,7 @@ describe('RFID scans, attendance and SMS', () => {
     });
     assert.equal((await scan(CARD_A)).status, 409);
     const entry = only('rfid.scan.rejected');
-    assert.deepEqual(entry.details, { scanOutcome: 'already-completed', studentId: ANA });
+    assert.deepEqual(entry.details, { scanOutcome: 'already-completed', studentId: ANA, source: 'manual-entry' });
   });
 });
 

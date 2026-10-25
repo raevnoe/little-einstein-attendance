@@ -3,7 +3,7 @@
 // The API is a fake here: no network, no Firestore, no RFID data changes, no SMS.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { normalizeRfidUid, SCAN_OUTCOMES } from '@led/shared';
+import { normalizeRfidUid, SCAN_METHODS, SCAN_OUTCOMES } from '@led/shared';
 import { SCAN_TONES, submitAttendanceScan } from '../src/lib/attendanceScan.js';
 import { createKeyboardScanBuffer } from '../src/lib/rfidKeyboardScanner.js';
 import { OFFLINE_MESSAGE } from '../src/lib/format.js';
@@ -41,7 +41,7 @@ describe('submitAttendanceScan (shared by reader and manual entry)', () => {
     const api = fakeApi(timeInResponse);
     const pending = [];
     const scanner = createKeyboardScanBuffer({
-      onScan: (uid) => pending.push(submitAttendanceScan(uid, { request: api.request, isOnline: online })),
+      onScan: (uid) => pending.push(submitAttendanceScan(uid, { request: api.request, isOnline: online, method: SCAN_METHODS.READER })),
     });
     for (const ch of READER_UID) scanner.handleKeyDown({ key: ch, target: { tagName: 'BODY' } });
     scanner.handleKeyDown({ key: 'Enter', target: { tagName: 'BODY' }, preventDefault() {} });
@@ -49,7 +49,7 @@ describe('submitAttendanceScan (shared by reader and manual entry)', () => {
     const results = await Promise.all(pending);
 
     assert.equal(api.calls.length, 1, '8. one reader scan = one attendance request');
-    assert.deepEqual(api.calls[0], { path: '/attendance/scan', options: { method: 'POST', body: { uid: READER_UID } } });
+    assert.deepEqual(api.calls[0], { path: '/attendance/scan', options: { method: 'POST', body: { uid: READER_UID, method: 'reader' } } });
     assert.equal(results[0].tone, SCAN_TONES.ACCEPTED);
     assert.equal(results[0].text, 'Time in recorded for Ana Cruz.');
     assert.equal(results[0].sms.text, 'Arrival SMS sent to 1 parent number.');
@@ -58,8 +58,16 @@ describe('submitAttendanceScan (shared by reader and manual entry)', () => {
   it('5. manual UID entry still submits the same request (raw UID, trimmed)', async () => {
     const api = fakeApi(timeInResponse);
     const result = await submitAttendanceScan('  3008 33b2-ddd9:01c4 0a00 0001 ', { request: api.request, isOnline: online });
-    assert.deepEqual(api.calls, [{ path: '/attendance/scan', options: { method: 'POST', body: { uid: '3008 33b2-ddd9:01c4 0a00 0001' } } }]);
+    assert.deepEqual(api.calls, [{ path: '/attendance/scan', options: { method: 'POST', body: { uid: '3008 33b2-ddd9:01c4 0a00 0001', method: 'manual' } } }]);
     assert.equal(result.tone, SCAN_TONES.ACCEPTED);
+  });
+
+  it('the reader panel reports method "reader"; the typed form "manual" (the default)', async () => {
+    const api = fakeApi(timeInResponse);
+    await submitAttendanceScan(READER_UID, { request: api.request, isOnline: online, method: SCAN_METHODS.READER });
+    await submitAttendanceScan(READER_UID, { request: api.request, isOnline: online, method: SCAN_METHODS.MANUAL });
+    await submitAttendanceScan(READER_UID, { request: api.request, isOnline: online });
+    assert.deepEqual(api.calls.map((c) => c.options.body.method), ['reader', 'manual', 'manual']);
   });
 
   it('3. an empty UID never calls the API', async () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { SCAN_METHODS } from '@led/shared';
 import { apiRequest } from '../../lib/apiClient.js';
 import { submitAttendanceScan } from '../../lib/attendanceScan.js';
 import { createKeyboardScanBuffer, isTextEntryElement } from '../../lib/rfidKeyboardScanner.js';
@@ -62,7 +63,7 @@ export default function ReaderScanPanel({ onScanned, timeZone }) {
       setScans((list) => [{ id, uid, result: null }, ...list].slice(0, MAX_RECENT_SCANS));
       // Scans are independent requests, so a queue of children is never blocked by one slow
       // response; the server's transaction and debounce handle any overlap.
-      const result = await submitAttendanceScan(uid, { request: apiRequest });
+      const result = await submitAttendanceScan(uid, { request: apiRequest, method: SCAN_METHODS.READER });
       // Audible confirmation at the reader: staff do not have to look at the screen for every child.
       const sound = soundForScan(result);
       if (sound) playSound(sound);

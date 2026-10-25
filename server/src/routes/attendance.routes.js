@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ROLES, SCAN_OUTCOMES, SCAN_SOURCES } from '@led/shared';
+import { ROLES, SCAN_METHODS, SCAN_OUTCOMES, SCAN_SOURCE_BY_METHOD } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { getDailyAttendance, processRfidScan } from '../services/attendance.service.js';
@@ -28,13 +28,28 @@ router.get('/', async (req, res) => {
   res.json(await getDailyAttendance({ date, q, status }));
 });
 
-// POST /api/attendance/scan  { "uid": "3008 33b2-ddd9:01c4 0a00 0001" }
+const INVALID_METHOD = 'Scan method must be "reader" or "manual".';
+
+/**
+ * The stored source for the screen's reported `method`: the UHF RFID Reader panel ("reader") or
+ * the typed-UID form ("manual"; also when no method is sent, e.g. an older cached app). Anything
+ * else is refused. The browser cannot PROVE which one produced a UID, so the source only labels
+ * the record ("reported by the screen"); every attendance rule is the same for both.
+ */
+function scanSourceFor(method) {
+  if (method === undefined || method === null) return SCAN_SOURCE_BY_METHOD[SCAN_METHODS.MANUAL];
+  const source = typeof method === 'string' ? SCAN_SOURCE_BY_METHOD[method] : undefined;
+  if (!source) throw new HttpError(400, 'validation/invalid-scan-method', INVALID_METHOD, { fields: { method: INVALID_METHOD } });
+  return source;
+}
+
+// POST /api/attendance/scan  { "uid": "3008 33b2-ddd9:01c4 0a00 0001", "method": "reader" | "manual" }
 // Used by the staff Attendance page for BOTH the UHF RFID reader (keyboard emulation: the
-// reader types the UID into the page) and the manual UID fallback. Only the UID is accepted;
-// the server decides the student, the date, the time and the source. The browser cannot
-// prove which of the two produced a UID, so the recorded source stays MANUAL_TEST.
+// reader types the UID into the page) and the manual UID fallback. The server decides the
+// student, the date, the time and the stored source (from the allow-listed method above).
 router.post('/scan', async (req, res) => {
-  const scan = await processRfidScan({ rawUid: req.body?.uid, source: SCAN_SOURCES.MANUAL_TEST, ctx: auditContext(req) });
+  const source = scanSourceFor(req.body?.method);
+  const scan = await processRfidScan({ rawUid: req.body?.uid, source, ctx: auditContext(req) });
   const status = HTTP_STATUS_BY_OUTCOME[scan.outcome] ?? 500;
   if (status >= 400) throw new HttpError(status, `attendance/${scan.outcome}`, scan.message, { scan });
   res.status(status).json({ scan });
