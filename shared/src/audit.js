@@ -32,7 +32,7 @@ export const AUDIT_OUTCOMES = Object.freeze({
   DENIED: 'denied',
 });
 
-export const AUDIT_TARGET_TYPES = Object.freeze(['user', 'student', 'rfidCard', 'attendance', 'performance', 'fetcher', 'dismissal', 'route']);
+export const AUDIT_TARGET_TYPES = Object.freeze(['user', 'student', 'section', 'rfidCard', 'attendance', 'performance', 'fetcher', 'dismissal', 'route']);
 
 // eventType -> { category, label }. Every event the server can record is listed here.
 export const AUDIT_EVENTS = Object.freeze({
@@ -44,11 +44,14 @@ export const AUDIT_EVENTS = Object.freeze({
   'user.deactivated': { category: 'account', label: 'Account deactivated' },
   'user.reactivated': { category: 'account', label: 'Account reactivated' },
   'user.mobile-number-changed': { category: 'account', label: 'Parent mobile number changed' },
+  'user.sections-changed': { category: 'account', label: 'Teacher sections changed' },
 
   'student.created': { category: 'student', label: 'Student created' },
   'student.updated': { category: 'student', label: 'Student updated' },
   'student.deactivated': { category: 'student', label: 'Student deactivated' },
   'student.reactivated': { category: 'student', label: 'Student reactivated' },
+  'section.added': { category: 'student', label: 'Section added' },
+  'section.removed': { category: 'student', label: 'Section removed' },
 
   'rfid.card.registered': { category: 'rfid', label: 'RFID card registered' },
   'rfid.card.assigned': { category: 'rfid', label: 'RFID card assigned' },

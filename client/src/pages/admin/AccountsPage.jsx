@@ -101,7 +101,73 @@ function CreateAccountForm({ onCreated, onCancel }) {
   );
 }
 
-function AccountRow({ user, isSelf, onChanged }) {
+/**
+ * A teacher's sections (PATCH /api/admin/users/:uid/sections). Teachers see and work only with
+ * students of these sections; with none they see no students. The list is managed under
+ * Students -> Sections.
+ */
+function TeacherSections({ user, sectionNames, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [chosen, setChosen] = useState(user.sections ?? []);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const current = user.sections ?? [];
+
+  const toggle = (name) => setChosen((list) => (list.includes(name) ? list.filter((n) => n !== name) : [...list, name]));
+
+  async function save() {
+    if (!navigator.onLine) return setError(OFFLINE_MESSAGE);
+    setBusy(true);
+    setError(null);
+    try {
+      await apiRequest(`/admin/users/${encodeURIComponent(user.uid)}/sections`, { method: 'PATCH', body: { sections: chosen } });
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-semibold text-brand-900">Sections:</span>
+        {current.length ? current.map((n) => <Badge key={n} tone="info">{n}</Badge>)
+          : <span className="text-amber-800">None assigned — this teacher sees no students</span>}
+        <button type="button" onClick={() => { setChosen(current); setEditing(true); }} className={buttonClass({ variant: 'quiet', size: 'sm' })}>
+          {current.length ? 'Change' : 'Assign sections'}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <fieldset className="mt-3 rounded-xl bg-canvas p-3" disabled={busy}>
+      <legend className="sr-only">Sections for {user.displayName}</legend>
+      <p className="text-sm font-semibold text-brand-900">Sections {user.firstName} handles</p>
+      {sectionNames.length === 0 ? (
+        <p className="mt-1 text-sm text-brand-700">No sections yet. Add them under Students → Sections.</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {sectionNames.map((name) => (
+            <label key={name} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-sm font-medium text-brand-900 ring-1 ring-brand-200 has-[:checked]:bg-sky-50 has-[:checked]:ring-sky-500">
+              <input type="checkbox" checked={chosen.includes(name)} onChange={() => toggle(name)} className="h-4 w-4 accent-brand-600" />
+              {name}
+            </label>
+          ))}
+        </div>
+      )}
+      {error && <Alert tone="error" className="mt-2">{error}</Alert>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" onClick={save} className={buttonClass({ size: 'sm' })}>{busy ? 'Saving…' : 'Save sections'}</button>
+        <button type="button" onClick={() => setEditing(false)} className={buttonClass({ variant: 'secondary', size: 'sm' })}>Cancel</button>
+      </div>
+    </fieldset>
+  );
+}
+
+function AccountRow({ user, isSelf, onChanged, sectionNames }) {
   const [mode, setMode] = useState(null); // null | 'deactivate' | 'reactivate' | 'role'
   const [newRole, setNewRole] = useState(user.role);
   const [busy, setBusy] = useState(false);
@@ -153,6 +219,7 @@ function AccountRow({ user, isSelf, onChanged }) {
           <ParentMobileNumber parent={user} canManage onSaved={onChanged} />
         </div>
       )}
+      {user.role === ROLES.TEACHER && <TeacherSections user={user} sectionNames={sectionNames} onSaved={onChanged} />}
 
       {isSelf ? (
         <p className="mt-3 text-sm text-brand-500">You cannot change your own role or status.</p>
@@ -231,6 +298,8 @@ export default function AccountsPage() {
   const [role, setRole] = useState('all');
   const [status, setStatus] = useState('active');
   const { loading, data, error, reload } = useApiData('/admin/users');
+  const sectionList = useApiData('/admin/sections');
+  const sectionNames = (sectionList.data?.sections ?? []).map((x) => x.name);
 
   function handleCreated(user, emailError) {
     setView('list');
@@ -297,7 +366,7 @@ export default function AccountsPage() {
         )}
         {users.length > 0 && (
           <ul className="mt-5 grid gap-4 md:grid-cols-2">
-            {users.map((u) => <AccountRow key={`${u.uid}:${u.updatedAt}`} user={u} isSelf={u.uid === account?.user?.uid} onChanged={reload} />)}
+            {users.map((u) => <AccountRow key={`${u.uid}:${u.updatedAt}`} user={u} isSelf={u.uid === account?.user?.uid} onChanged={reload} sectionNames={sectionNames} />)}
           </ul>
         )}
       </Panel>

@@ -13,6 +13,8 @@ export async function startTestApi({ smsProvider = 'mock' } = {}) {
   process.env.PHILSMS_API_TOKEN = '';
 
   const fake = createFakeFirebase();
+  // The section list most tests use (students default to K1). Tests about sections seed their own.
+  fake.seed('systemSettings', 'sections', { names: ['K1', 'K2'] });
   mock.module(new URL('../../src/config/firebaseAdmin.js', import.meta.url).href, {
     namedExports: { db: fake.db, adminAuth: fake.adminAuth },
   });
@@ -34,11 +36,15 @@ export async function startTestApi({ smsProvider = 'mock' } = {}) {
     return { status: response.status, body: text ? JSON.parse(text) : null, text, headers: Object.fromEntries(response.headers) };
   }
 
-  /** Creates users/{uid} and a sign-in token "tok-<uid>" whose verified role claim is `role`. */
-  function addUser({ uid, role, active = true, mobileNumber, firstName = uid, lastName = 'Test', claimRole = role }) {
+  /**
+   * Creates users/{uid} and a sign-in token "tok-<uid>" whose verified role claim is `role`.
+   * Teachers handle sections K1 and K2 unless `sections` is given (teachers see only their sections).
+   */
+  function addUser({ uid, role, active = true, mobileNumber, firstName = uid, lastName = 'Test', claimRole = role, sections }) {
+    const teacherSections = role === 'teacher' ? (sections ?? ['K1', 'K2']) : sections;
     fake.seed('users', uid, {
       uid, email: `${uid}@example.com`, firstName, lastName, displayName: `${firstName} ${lastName}`,
-      role, active, ...(mobileNumber ? { mobileNumber } : {}),
+      role, active, ...(mobileNumber ? { mobileNumber } : {}), ...(teacherSections ? { sections: teacherSections } : {}),
     });
     fake.addToken(`tok-${uid}`, { uid, email: `${uid}@example.com`, role: claimRole });
     return `tok-${uid}`;

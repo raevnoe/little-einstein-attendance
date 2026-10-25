@@ -5,6 +5,7 @@
 // token's custom claim (see middleware/requireAuth.js).
 //
 // `mobileNumber` (parents only, optional): +639XXXXXXXXX, used for attendance SMS.
+// `sections` (teachers only): the section names they may work with (utils/sectionScope.js).
 // It is stored only here - never copied into students, attendance, or other records.
 import { ALL_ROLES, COLLECTIONS, ROLES, normalizePhMobileNumber } from '@led/shared';
 import { db } from '../config/firebaseAdmin.js';
@@ -93,6 +94,8 @@ export function toPublicUser(data) {
     role: data.role,
     active: data.active,
     mobileNumber: data.mobileNumber ?? null,
+    // Teachers: the sections they handle (users/{uid}.sections, set by admins). Admins see every section.
+    sections: data.role === ROLES.TEACHER ? (Array.isArray(data.sections) ? data.sections : []) : [],
     createdAt: data.createdAt?.toDate?.().toISOString() ?? null,
     updatedAt: data.updatedAt?.toDate?.().toISOString() ?? null,
   };

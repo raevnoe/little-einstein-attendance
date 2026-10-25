@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { ROLES } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { assignRole, createAccount, listAccounts, setAccountActive, setParentMobileNumber } from '../services/userAccount.service.js';
+import { assignRole, createAccount, listAccounts, setAccountActive, setParentMobileNumber, setTeacherSections } from '../services/userAccount.service.js';
+import { addSection, listSections, removeSection } from '../services/section.service.js';
 import { findUsersByRole, UID_PATTERN } from '../models/user.model.js';
 import { adminDeactivateFetcher, listAllFetchers, parseFetcherId } from '../services/fetcher.service.js';
 import { getAdminOverview } from '../services/report.service.js';
@@ -69,6 +70,38 @@ router.patch('/users/:uid/role', async (req, res) => {
 router.post('/users/:uid/deactivate', async (req, res) => {
   const user = await setAccountActive(auditContext(req), targetUid(req), false);
   res.json({ user });
+});
+
+// PATCH /api/admin/users/:uid/sections  { "sections": ["Kinder A", "Kinder B"] }  ([] = none)
+// Teacher accounts only; names must be on the section list. Teachers see only these sections' students.
+router.patch('/users/:uid/sections', async (req, res) => {
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  const unknown = Object.keys(body).filter((key) => key !== 'sections');
+  if (unknown.length || !('sections' in body)) {
+    throw new HttpError(400, 'validation/invalid-request', 'Send only { "sections": ["..."] }.');
+  }
+  res.json({ user: await setTeacherSections(auditContext(req), targetUid(req), body.sections) });
+});
+
+// ---- Sections (the list used by student records and teacher assignments)
+
+// GET /api/admin/sections - the list with student/teacher counts, plus unlisted student sections.
+router.get('/sections', async (req, res) => {
+  res.json(await listSections());
+});
+
+// POST /api/admin/sections  { "name": "Kinder A" } - 409 if it already exists.
+router.post('/sections', async (req, res) => {
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  if (Object.keys(body).some((key) => key !== 'name')) {
+    throw new HttpError(400, 'validation/invalid-request', 'Send only { "name": "..." }.');
+  }
+  res.status(201).json(await addSection(auditContext(req), body));
+});
+
+// DELETE /api/admin/sections/:name - 409 while any student or teacher still uses it.
+router.delete('/sections/:name', async (req, res) => {
+  res.json(await removeSection(auditContext(req), req.params.name));
 });
 
 // PATCH /api/admin/users/:uid/mobile-number  { "mobileNumber": "09171234567" | null }

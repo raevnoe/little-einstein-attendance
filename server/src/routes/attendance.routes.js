@@ -5,6 +5,7 @@ import { requireRole } from '../middleware/requireRole.js';
 import { getDailyAttendance, processRfidScan } from '../services/attendance.service.js';
 import { auditContext } from '../services/audit.service.js';
 import { HttpError } from '../utils/httpError.js';
+import { scopeFor } from '../utils/sectionScope.js';
 
 // Daily Attendance for staff (admin and teacher). Parents read their own child's
 // attendance through /api/parent/children/:studentId/attendance instead.
@@ -25,7 +26,7 @@ const HTTP_STATUS_BY_OUTCOME = {
 // GET /api/attendance?date=YYYY-MM-DD&q=<search>&status=absent|checked-in|checked-out
 router.get('/', async (req, res) => {
   const { date, q, status } = req.query;
-  res.json(await getDailyAttendance({ date, q, status }));
+  res.json(await getDailyAttendance({ date, q, status, scope: scopeFor(req) }));
 });
 
 const INVALID_METHOD = 'Scan method must be "reader" or "manual".';

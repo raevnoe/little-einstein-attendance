@@ -20,6 +20,7 @@ import {
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { audiencesFor, inboxCollection, isoFloor, toInboxView } from '../models/inbox.model.js';
+import { sectionKey } from '../models/section.model.js';
 import { findStudentsByParent } from '../models/student.model.js';
 import { findUsersByIds, findUsersByRole, usersCollection } from '../models/user.model.js';
 import { formatSchoolDateShort, formatSchoolTime, schoolDateOf } from '../utils/schoolDate.js';
@@ -36,10 +37,18 @@ async function activeParentUids(parentIds = []) {
   return users.filter((u) => u.role === ROLES.PARENT && u.active === true).map((u) => u.uid);
 }
 
-async function activeStaffUids({ adminsOnly = false } = {}) {
+/**
+ * Active admins, plus (unless adminsOnly) active teachers. With `section`, only the teachers who
+ * handle that section: a teacher is told only about children they may work with.
+ */
+async function activeStaffUids({ adminsOnly = false, section } = {}) {
   const roles = adminsOnly ? [ROLES.ADMIN] : [ROLES.ADMIN, ROLES.TEACHER];
   const users = (await Promise.all(roles.map(findUsersByRole))).flat();
-  return users.filter((u) => u.active === true).map((u) => u.uid);
+  return users
+    .filter((u) => u.active === true)
+    .filter((u) => u.role !== ROLES.TEACHER || section === undefined
+      || (u.sections ?? []).some((name) => sectionKey(name) === sectionKey(section)))
+    .map((u) => u.uid);
 }
 
 // ---- writing
@@ -156,7 +165,7 @@ export async function notifyDismissalRequestInApp({ record, student, parentUid, 
   });
   if (!smsOk) return;
   await safely(KIND.DISMISSAL_REQUEST, async () => {
-    await deliverOnce(await activeStaffUids(), `dismissal-request_${id}`, {
+    await deliverOnce(await activeStaffUids({ section: student.section ?? '' }), `dismissal-request_${id}`, {
       kind: KIND.DISMISSAL_REQUEST,
       audience: AUDIENCE.STAFF,
       title: `Dismissal request: ${fullName(student)}`,
@@ -169,7 +178,7 @@ export async function notifyDismissalRequestInApp({ record, student, parentUid, 
 /** Too many incorrect codes: staff are told the request is locked. */
 export async function notifyDismissalLockedInApp({ record, student }) {
   await safely(KIND.DISMISSAL_LOCKED, async () => {
-    await deliverOnce(await activeStaffUids(), `dismissal-locked_${record.dismissalId}_${record.requestCount}`, {
+    await deliverOnce(await activeStaffUids({ section: student?.section ?? '' }), `dismissal-locked_${record.dismissalId}_${record.requestCount}`, {
       kind: KIND.DISMISSAL_LOCKED,
       audience: AUDIENCE.STAFF,
       title: `Dismissal code locked: ${student ? fullName(student) : record.studentId}`,

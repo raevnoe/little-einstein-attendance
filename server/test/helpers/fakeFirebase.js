@@ -45,8 +45,8 @@ function autoId() {
   return [...randomBytes(20)].map((b) => AUTO_ID_CHARS[b % AUTO_ID_CHARS.length]).join('');
 }
 
-function snapshot(id, data) {
-  return { id, exists: data !== undefined, data: () => (data === undefined ? undefined : clone(data)) };
+function snapshot(id, data, ref) {
+  return { id, ref, exists: data !== undefined, data: () => (data === undefined ? undefined : clone(data)) };
 }
 
 export function createFakeFirebase() {
@@ -136,7 +136,7 @@ export function createFakeFirebase() {
         entries = entries.filter((e) => compare(e, marker) > 0);
       }
       if (options.limit !== undefined) entries = entries.slice(0, options.limit);
-      const docs = entries.map(([id, data]) => snapshot(id, data));
+      const docs = entries.map(([id, data]) => snapshot(id, data, docRef(collection, id)));
       return { docs, empty: docs.length === 0, size: docs.length };
     };
     return {
@@ -228,7 +228,12 @@ export function createFakeFirebase() {
       return { ...user };
     },
     async deleteUser(uid) {
+      if (!authUsers.has(uid)) throw Object.assign(new Error('no user'), { code: 'auth/user-not-found' });
       authUsers.delete(uid);
+    },
+    // One page holds every user (tests never have more than a handful).
+    async listUsers() {
+      return { users: [...authUsers.values()].map((u) => ({ uid: u.uid, email: u.email })), pageToken: undefined };
     },
     async setCustomUserClaims(uid, claims) {
       if (authUsers.has(uid)) authUsers.get(uid).customClaims = { ...claims };

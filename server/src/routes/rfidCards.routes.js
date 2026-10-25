@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ROLES } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { scopeFor } from '../utils/sectionScope.js';
 import { parseStudentId } from '../services/student.service.js';
 import {
   assignCard,
@@ -26,12 +27,12 @@ router.use(requireAuth);
 // GET /api/rfid-cards?q=<uid/student>&status=active|inactive|all&assignment=assigned|unassigned|all
 router.get('/', staffOnly, async (req, res) => {
   const { q, status, assignment } = req.query;
-  res.json({ cards: await listCards({ q, status, assignment }) });
+  res.json({ cards: await listCards({ q, status, assignment, scope: scopeFor(req) }) });
 });
 
 // GET /api/rfid-cards/:uid
 router.get('/:uid', staffOnly, async (req, res) => {
-  res.json({ card: await getCard(parseRfidUid(req.params.uid)) });
+  res.json({ card: await getCard(parseRfidUid(req.params.uid), { scope: scopeFor(req) }) });
 });
 
 // POST /api/rfid-cards  { "uid": "300833B2DDD901C40A000001", "studentId"?: "K2026-001" } - registers a card;

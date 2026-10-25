@@ -3,7 +3,7 @@ import { formatDayDate } from '../../lib/format.js';
 import Panel, { ErrorMessage, QuietButton } from '../Panel.jsx';
 import StatCard, { StatGrid } from './StatCard.jsx';
 import { SchoolLogo } from '../landing/SchoolMark.jsx';
-import { HeroBanner, LoadingState, Sparkle } from '../ui/index.js';
+import { Alert, HeroBanner, LoadingState, Sparkle } from '../ui/index.js';
 import { ArrowRightIcon, AttendanceIcon, DismissalIcon, InfoIcon, PhoneIcon, RefreshIcon, StarIcon, StudentsIcon } from '../ui/icons.jsx';
 
 const GROUP_TONES = {
@@ -61,6 +61,25 @@ const QUICK_ACTIONS = [
  * Greeting hero for the staff home tab. Quick actions only open sections that are already in this
  * role's navigation (`onNavigate(key)`); nothing here loads data.
  */
+/** Teachers: the sections an admin assigned (they see only these students). Admins see every section. */
+export function TeacherSectionsNote({ account }) {
+  const sections = account.profile.sections ?? [];
+  if (sections.length === 0) {
+    return (
+      <Alert tone="warning" title="No section assigned yet">
+        You will see students, attendance, Performance Evaluations, dismissals and reports once an administrator assigns
+        your section(s) under Accounts.
+      </Alert>
+    );
+  }
+  return (
+    <p className="flex flex-wrap items-center gap-2 text-sm text-brand-700">
+      <span className="font-semibold text-brand-900">Your section{sections.length === 1 ? '' : 's'}:</span>
+      {sections.map((n) => <span key={n} className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-100">{n}</span>)}
+    </p>
+  );
+}
+
 export function StaffWelcome({ account, roleLabel, onNavigate }) {
   const firstName = account.profile.displayName?.split(' ')[0];
   return (

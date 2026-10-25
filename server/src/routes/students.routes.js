@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ROLES } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { scopeFor } from '../utils/sectionScope.js';
 import {
   createStudent,
   getStudent,
@@ -22,13 +23,13 @@ router.use(requireAuth);
 
 // GET /api/students?q=<search>&status=active|inactive|all
 router.get('/', staffOnly, async (req, res) => {
-  const students = await listStudents({ q: req.query.q, status: req.query.status });
+  const students = await listStudents({ q: req.query.q, status: req.query.status, scope: scopeFor(req) });
   res.json({ students });
 });
 
 // GET /api/students/:studentId - parent email/mobile number only for admins (teachers see hasMobileNumber).
 router.get('/:studentId', staffOnly, async (req, res) => {
-  res.json({ student: await getStudent(parseStudentId(req.params.studentId), { includeContact: req.profile.role === ROLES.ADMIN }) });
+  res.json({ student: await getStudent(parseStudentId(req.params.studentId), { includeContact: req.profile.role === ROLES.ADMIN, scope: scopeFor(req) }) });
 });
 
 // POST /api/students

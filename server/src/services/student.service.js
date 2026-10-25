@@ -23,6 +23,8 @@ import {
 } from '../models/student.model.js';
 import { HttpError } from '../utils/httpError.js';
 import { ACCESS_DENIED_WINDOW_MS, auditInTransaction, recordAudit } from './audit.service.js';
+import { resolveStudentSection } from './section.service.js';
+import { ALL_SECTIONS, studentInScope } from '../utils/sectionScope.js';
 
 // Firestore gRPC status codes.
 const ALREADY_EXISTS = 6;
@@ -61,10 +63,12 @@ export function matchesStudentSearch(s, q) {
   return search.split(/\s+/).every((term) => haystack.includes(term));
 }
 
-export async function listStudents({ q, status } = {}) {
+/** `scope` (utils/sectionScope.js): admins see every student, teachers only their sections. */
+export async function listStudents({ q, status, scope = ALL_SECTIONS } = {}) {
   const wantActive = status === 'active' ? true : status === 'inactive' ? false : null;
 
   return (await findAllStudents())
+    .filter((s) => studentInScope(scope, s))
     .filter((s) => wantActive === null || s.active === wantActive)
     .filter((s) => matchesStudentSearch(s, q))
     .map(toStudentSummary);
@@ -75,9 +79,10 @@ export async function listStudents({ q, status } = {}) {
  * mobile number) are included only with `includeContact` (admins: they manage SMS numbers).
  * Teachers only see whether a parent has an SMS number on file.
  */
-export async function getStudent(studentId, { includeContact = false } = {}) {
+export async function getStudent(studentId, { includeContact = false, scope = ALL_SECTIONS } = {}) {
   const student = await findStudentById(studentId);
-  if (!student) throw STUDENT_NOT_FOUND();
+  // Another section's student looks exactly like a missing one.
+  if (!studentInScope(scope, student)) throw STUDENT_NOT_FOUND();
 
   const parents = (await findUsersByIds(student.parentIds ?? [])).map(({ uid, displayName, email, active, mobileNumber }) => ({
     uid,
@@ -96,6 +101,11 @@ export async function createStudent(ctx, input) {
   const { data, errors } = validateStudentFields(body);
   if (!studentId) {
     errors.studentId = 'Student ID is required: 3-20 letters, numbers or hyphens (e.g. K2026-001).';
+  }
+  if (!errors.section) {
+    const section = await resolveStudentSection(data.section);
+    if (section.error) errors.section = section.error;
+    else data.section = section.value;
   }
   if (Object.keys(errors).length) throw invalid(errors);
 
@@ -133,6 +143,14 @@ export async function updateStudent(ctx, studentId, input) {
   }
 
   const { data, errors } = validateStudentFields(body, { partial: true });
+  if ('section' in data && !errors.section) {
+    // A section must be on the list - except keeping the one the student already has.
+    const current = await findStudentById(studentId);
+    if (!current) throw STUDENT_NOT_FOUND();
+    const section = await resolveStudentSection(data.section, { current: current.section });
+    if (section.error) errors.section = section.error;
+    else data.section = section.value;
+  }
   if (Object.keys(errors).length) throw invalid(errors);
   if (Object.keys(data).length === 0) {
     throw new HttpError(400, 'validation/empty-update', 'No changes were provided.');

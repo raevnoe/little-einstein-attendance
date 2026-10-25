@@ -28,6 +28,7 @@ import { addDays, isValidSchoolDate, schoolDateOf } from '../utils/schoolDate.js
 import { HttpError } from '../utils/httpError.js';
 import { auditInTransaction } from './audit.service.js';
 import { notifyPerformanceInApp } from './inbox.service.js';
+import { ALL_SECTIONS, sectionInScope, studentInScope } from '../utils/sectionScope.js';
 
 const CREATE_FIELDS = ['studentId', 'evaluationDate', 'area', 'starRating', 'observation'];
 const UPDATE_FIELDS = ['starRating', 'observation'];
@@ -72,10 +73,10 @@ export function parsePerformanceId(value) {
   return performanceDocId(parts.studentId, parts.evaluationDate, parts.area);
 }
 
-/** Reads the student inside the transaction: must exist and be active. */
-async function assertActiveStudent(tx, studentId) {
+/** Reads the student inside the transaction: must exist, be in the staff member's sections, and be active. */
+async function assertActiveStudent(tx, studentId, scope = ALL_SECTIONS) {
   const snapshot = await tx.get(studentsCollection().doc(studentId));
-  if (!snapshot.exists) throw studentNotFound();
+  if (!snapshot.exists || !studentInScope(scope, snapshot.data())) throw studentNotFound();
   if (snapshot.data().active !== true) throw studentInactive();
   return snapshot.data();
 }
@@ -100,10 +101,15 @@ async function withNames(records) {
   });
 }
 
-export async function getEvaluation(id) {
+/** Evaluations are visible to a teacher only for students of their sections (`scope`). */
+const evaluationInScope = (scope, e) => scope.all || Boolean(e.student && sectionInScope(scope, e.student.section));
+
+export async function getEvaluation(id, { scope = ALL_SECTIONS } = {}) {
   const record = await findPerformanceById(id);
   if (!record) throw notFound();
-  return (await withNames([record]))[0];
+  const evaluation = (await withNames([record]))[0];
+  if (!evaluationInScope(scope, evaluation)) throw notFound();
+  return evaluation;
 }
 
 /** Audit entry for a saved evaluation (inside the saving transaction). */
@@ -127,7 +133,7 @@ function auditSave(tx, ctx, id, previous, fields) {
  * Creates the evaluation for student/date/area, or updates it if one already exists.
  * `ctx` = auditContext(req); the evaluator is its verified user. Returns { created, evaluation }.
  */
-export async function saveEvaluation(ctx, input) {
+export async function saveEvaluation(ctx, input, { scope = ALL_SECTIONS } = {}) {
   const teacherUid = ctx.actor.uid;
   const body = asObject(input);
   rejectUnknownFields(body, CREATE_FIELDS);
@@ -147,7 +153,7 @@ export async function saveEvaluation(ctx, input) {
   const id = performanceDocId(studentId, date.value, body.area);
   const ref = performanceCollection().doc(id);
   const { created, student } = await db.runTransaction(async (tx) => {
-    const student = await assertActiveStudent(tx, studentId);
+    const student = await assertActiveStudent(tx, studentId, scope);
     const existing = await tx.get(ref);
     const fields = {
       starRating: rating.value,
@@ -177,7 +183,7 @@ export async function saveEvaluation(ctx, input) {
 }
 
 /** Changes the star rating and/or observation of an existing evaluation. */
-export async function updateEvaluation(ctx, id, input) {
+export async function updateEvaluation(ctx, id, input, { scope = ALL_SECTIONS } = {}) {
   const teacherUid = ctx.actor.uid;
   const body = asObject(input);
   rejectUnknownFields(body, UPDATE_FIELDS);
@@ -202,7 +208,7 @@ export async function updateEvaluation(ctx, id, input) {
     const snapshot = await tx.get(ref);
     if (!snapshot.exists) throw notFound();
     const previous = snapshot.data();
-    const student = await assertActiveStudent(tx, previous.studentId);
+    const student = await assertActiveStudent(tx, previous.studentId, scope);
     tx.update(ref, { ...fields, teacherId: teacherUid, updatedAt: FieldValue.serverTimestamp() });
     auditSave(tx, ctx, id, previous, {
       studentId: previous.studentId,
@@ -221,7 +227,7 @@ export async function updateEvaluation(ctx, id, input) {
  * Staff list filtered by student, date and/or area. With neither a student nor a date,
  * today's evaluations are returned (never the whole collection).
  */
-export async function listEvaluations({ studentId: rawStudentId, date: rawDate, area } = {}) {
+export async function listEvaluations({ studentId: rawStudentId, date: rawDate, area, scope = ALL_SECTIONS } = {}) {
   let studentId = null;
   if (rawStudentId !== undefined && rawStudentId !== '') {
     studentId = normalizeStudentId(rawStudentId);
@@ -237,7 +243,7 @@ export async function listEvaluations({ studentId: rawStudentId, date: rawDate, 
     .filter((r) => !date || r.evaluationDate === date)
     .filter((r) => !area || r.area === area);
 
-  const evaluations = (await withNames(records)).sort((a, b) =>
+  const evaluations = (await withNames(records)).filter((e) => evaluationInScope(scope, e)).sort((a, b) =>
     b.evaluationDate.localeCompare(a.evaluationDate)
     || (a.student?.name ?? a.studentId).localeCompare(b.student?.name ?? b.studentId)
     || areaOrder(a.area) - areaOrder(b.area));

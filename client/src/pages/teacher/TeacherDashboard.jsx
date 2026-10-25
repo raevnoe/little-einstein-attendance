@@ -8,7 +8,7 @@ import AttendancePage from '../AttendancePage.jsx';
 import PerformancePage from '../PerformancePage.jsx';
 import DismissalPage from '../DismissalPage.jsx';
 import ReportsPage from '../ReportsPage.jsx';
-import { StaffWelcome, TodaySummary } from '../../components/reports/DashboardSummaries.jsx';
+import { StaffWelcome, TeacherSectionsNote, TodaySummary } from '../../components/reports/DashboardSummaries.jsx';
 import { AttendanceIcon, DismissalIcon, HomeIcon, ReportsIcon, RfidCardIcon, StarIcon, StudentsIcon } from '../../components/ui/icons.jsx';
 
 const NAV = [
@@ -57,6 +57,7 @@ export default function TeacherDashboard({ section, onSectionChange }) {
       ) : (
         <div className="space-y-6">
           <StaffWelcome account={account} roleLabel="Teacher" onNavigate={navigate} />
+          <TeacherSectionsNote account={account} />
           <TodaySummary onNavigate={navigate} />
           {/* Development only: shows what the SERVER decided about this account's role. */}
           {import.meta.env.DEV && <ServerAccessCheck endpoint="/teacher/test" />}

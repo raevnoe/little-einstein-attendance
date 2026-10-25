@@ -649,8 +649,8 @@ own authorized Fetcher; the teacher verifies, then separately confirms the relea
 * Verify/release are Firestore transactions; both re-check that the Fetcher is active, still
   authorized, and unchanged (name/relationship) and that the client's `requestNumber` matches.
   `verifiedBy`/`releasedBy`/timestamps come from the server only. Attendance is never touched.
-* Teachers have no section assignment in the data model, so any teacher/admin may verify any
-  student's dismissal in this one school.
+* Since 2026-10-26 teachers HAVE sections (see "Sections and teacher scope"): a teacher verifies/releases only
+  dismissals of students in their sections; admins any.
 * Dev-only manual-test helper: `GET /api/dev/dismissal-otp/:studentId` (`routes/dev.routes.js`,
   `services/sms/devOtpOutbox.js`) returns the requesting parent's own current code from process
   memory. Only when NODE_ENV != production AND SMS_PROVIDER=mock AND the mock provider is active;
@@ -1782,6 +1782,39 @@ Form/UX updates (developer request, 2026-10-24; PENDING developer browser test).
   saveAreaEvaluation, also used by the per-area button), one sound at the end; unrated changed areas are reported and kept
   as drafts. Rows report drafts via `onDraftChange`; "Unsaved changes" badge. Landing copy made role-neutral ("For
   parents, teachers & school staff", "Login"). Phone header `relative` so the bell panel is above page content.
+
+Sections and teacher scope (developer request, 2026-10-26; PENDING developer browser test):
+
+* Developer decisions: a teacher's sections RESTRICT what they see and do (server-enforced); a teacher may have one
+  or more sections; the section list is ADMIN-MANAGED.
+* List: `systemSettings/sections` { names[] } (model `server/src/models/section.model.js`; no new collection). Until an
+  admin saves it, it is the distinct sections students already use. Names compare ignoring case/extra spaces
+  (`sectionKey`). API (admin only, `routes/admin.routes.js`, `services/section.service.js`): `GET /api/admin/sections`
+  (counts + `unlisted` student sections), `POST /api/admin/sections {name}` (409 duplicate), `DELETE
+  /api/admin/sections/:name` (409 while any student - active or not - or teacher uses it; no rename). Audited
+  `section.added` / `section.removed` (target type `section`).
+* Students: `section` must be on the list (stored with the list spelling); an edit may KEEP an older unlisted section.
+  Client: StudentForm section = dropdown of the list (+ the student's unlisted current one); `SectionsPanel` (admin,
+  collapsible, Students page) adds/removes sections and offers "Add" for unlisted ones.
+* Teachers: `users/{uid}.sections` (names on the list) via `PATCH /api/admin/users/:uid/sections {sections}`
+  (teachers only; `setTeacherSections` in userAccount.service, profile + `user.sections-changed` audit in one
+  transaction). `toPublicUser` returns `sections` ([] for non-teachers). Client: Accounts -> teacher -> Sections
+  (checkboxes); teacher dashboard shows "Your sections" or a "No section assigned yet" warning.
+* Scope (`server/src/utils/sectionScope.js`: `scopeFor(req)` from the verified role + server profile; admins = all):
+  students list/detail, RFID cards (only cards of own students), attendance roster + summary, performance
+  list/detail/save/edit, dismissals list/verify/release, reports today/attendance/performance (records filtered too).
+  Out-of-scope = 404 like a missing record (not audited). A teacher with no sections sees nothing. NOT scoped on
+  purpose: `POST /api/attendance/scan` (the entrance reader records every student). Staff dismissal-request / locked
+  notifications go to admins + teachers of that child's section only. Older inbox items are not re-filtered.
+* Tests: `server/test/sections.test.js` (13); test helper gives teachers sections K1+K2 by default and seeds the list.
+
+Demo data reset (developer request, 2026-10-26): `npm run data:reset -w server -- --keep <emails> [--confirm "DELETE TEST DATA"]`
+(`server/scripts/resetData.js` -> `services/dataReset.service.js`; CLI ONLY, no API route). Dry run by default; the real run
+writes `server/backups/reset-<time>.json` (git-ignored, contains personal data) BEFORE deleting. Deletes students, rfidCards,
+attendance, performance, fetchers, dismissalRecords, notifications, announcements, auditLogs, every users/{uid}/inbox,
+systemSettings/sections, and every account (Auth + profile) not kept; kept accounts lose `sections`/`notificationsSeenAt`.
+Refuses if a kept email has no account or no ACTIVE admin is kept. Tests: `server/test/dataReset.test.js` (the fake now has
+`listUsers` and query snapshots carry `ref`).
 
 Page addresses (developer request, 2026-10-24; PENDING developer browser test). Client only, no new packages:
 

@@ -9,6 +9,7 @@
 // safe, undoes the Auth step when the audit/profile write fails, and reports an Auth step that
 // failed AFTER the audited profile change as a separate "failure" entry plus an error response.
 import { randomBytes } from 'node:crypto';
+import { resolveTeacherSections } from './section.service.js';
 import { ALL_ROLES, AUDIT_OUTCOMES, ROLES, normalizePhMobileNumber } from '@led/shared';
 import { FieldValue } from 'firebase-admin/firestore';
 import { adminAuth, db } from '../config/firebaseAdmin.js';
@@ -187,6 +188,26 @@ export async function setAccountActive(ctx, targetUid, active) {
  * Stored normalized as +639XXXXXXXXX on users/{uid} only. The audit entry records only
  * whether a number is set, never the number.
  */
+/**
+ * Sets the sections a TEACHER handles (body { sections: [names on the list] }; [] = none, so the
+ * teacher sees no students). Profile change + audit in one transaction, like the mobile number.
+ */
+export async function setTeacherSections(ctx, targetUid, value) {
+  const profile = await findUserById(targetUid);
+  if (!profile) throw new HttpError(404, 'users/not-found', 'User not found.');
+  if (profile.role !== ROLES.TEACHER) {
+    throw new HttpError(400, 'users/not-teacher', 'Sections can only be assigned to teacher accounts.');
+  }
+  const resolved = await resolveTeacherSections(value);
+  if (resolved.error) {
+    throw new HttpError(400, 'validation/invalid-sections', resolved.error, { fields: { sections: resolved.error } });
+  }
+  await updateProfileWithAudit(targetUid, { sections: resolved.value }, {
+    ...ctx, eventType: 'user.sections-changed', details: { sections: resolved.value, count: resolved.value.length },
+  });
+  return toPublicUser(await findUserById(targetUid));
+}
+
 export async function setParentMobileNumber(ctx, targetUid, value) {
   const profile = await findUserById(targetUid);
   if (!profile) throw new HttpError(404, 'users/not-found', 'User not found.');

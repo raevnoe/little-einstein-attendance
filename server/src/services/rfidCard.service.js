@@ -9,6 +9,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { findAllCards, findCardByUid, newCardFields, rfidCardsCollection, toCardView } from '../models/rfidCard.model.js';
 import { findAllStudents, findStudentById, normalizeStudentId, studentsCollection } from '../models/student.model.js';
+import { ALL_SECTIONS, studentInScope } from '../utils/sectionScope.js';
 import { HttpError } from '../utils/httpError.js';
 import { auditInTransaction } from './audit.service.js';
 
@@ -80,13 +81,15 @@ export async function registerCard(ctx, body) {
   return getCard(uid);
 }
 
-export async function listCards({ q, status, assignment } = {}) {
+/** Teachers (`scope`) see only cards assigned to students of their sections; admins see every card. */
+export async function listCards({ q, status, assignment, scope = ALL_SECTIONS } = {}) {
   const [cards, students] = await Promise.all([findAllCards(), findAllStudents()]);
   const studentsById = new Map(students.map((s) => [s.studentId, s]));
   const search = typeof q === 'string' ? q.trim().toLowerCase() : '';
   const compactSearch = search.replace(/[\s:-]/g, '');
 
   return cards
+    .filter((c) => scope.all || studentInScope(scope, studentsById.get(c.studentId)))
     .filter((c) => (status === 'active' ? c.active : status === 'inactive' ? !c.active : true))
     .filter((c) => (assignment === 'assigned' ? Boolean(c.studentId) : assignment === 'unassigned' ? !c.studentId : true))
     .map((c) => ({ ...toCardView(c), student: studentRef(studentsById.get(c.studentId)) }))
@@ -99,14 +102,17 @@ export async function listCards({ q, status, assignment } = {}) {
     });
 }
 
-export async function getCard(uid) {
+export async function getCard(uid, { scope = ALL_SECTIONS } = {}) {
   const card = await findCardByUid(uid);
   if (!card) throw cardNotFound();
   const [student, previousStudent] = await Promise.all([
     card.studentId ? findStudentById(card.studentId) : null,
     card.previousStudentId ? findStudentById(card.previousStudentId) : null,
   ]);
-  return { ...toCardView(card), student: studentRef(student), previousStudent: studentRef(previousStudent) };
+  // A teacher sees a card only while it belongs to a student of their sections.
+  if (!scope.all && !studentInScope(scope, student)) throw cardNotFound();
+  const previous = scope.all || studentInScope(scope, previousStudent) ? previousStudent : null;
+  return { ...toCardView(card), student: studentRef(student), previousStudent: studentRef(previous) };
 }
 
 async function readStudent(tx, studentId) {

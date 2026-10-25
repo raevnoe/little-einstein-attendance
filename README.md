@@ -162,6 +162,10 @@ and match that role.
 | GET    | `/api/reports/today`               | admin, teacher     | Today's attendance, evaluation and dismissal counts |
 | GET    | `/api/reports/attendance?from=&to=&section=&studentId=` | admin, teacher | Attendance report (max 31 days) |
 | GET    | `/api/reports/performance?from=&to=&section=&studentId=&area=` | admin, teacher | Performance report (max 31 days) |
+| GET    | `/api/admin/sections`              | admin              | Section list with student/teacher counts            |
+| POST   | `/api/admin/sections`              | admin              | Add a section `{ name }` (409 if it exists)        |
+| DELETE | `/api/admin/sections/:name`        | admin              | Remove an unused section (409 while in use)         |
+| PATCH  | `/api/admin/users/:uid/sections`   | admin              | A teacher's sections `{ sections: [...] }` (teachers see only these students) |
 | GET    | `/api/notifications?after=`        | admin, teacher, parent | Own in-app notifications (the bell), newest first |
 | POST   | `/api/notifications/seen`          | admin, teacher, parent | Mark own notifications seen `{ upTo }`         |
 
@@ -277,6 +281,24 @@ The first admin must be created from the command line. Run the script with `node
 cd server
 node --env-file=.env scripts/createUser.js --email admin@school.test --password "<strong password>" --first Ana --last Cruz --role admin
 ```
+
+## Cleaning test data before a demo
+
+`server/scripts/resetData.js` removes every test record and every account that is **not** on your keep list.
+It runs on your computer with the Firebase Admin credentials in `server/.env`; the app cannot start it.
+
+```bash
+# 1. Dry run: shows what would be kept and deleted, changes nothing
+npm run data:reset -w server -- --keep you@school.ph,teacher@school.ph,parent@school.ph
+# 2. Real run: saves a JSON backup in server/backups/ first, then deletes
+npm run data:reset -w server -- --keep you@school.ph,teacher@school.ph,parent@school.ph --confirm "DELETE TEST DATA"
+```
+
+Deleted: students, RFID cards, attendance, Performance Evaluations, Fetchers, dismissal records, SMS records,
+the audit log, all notification bells, the section list, and the accounts not kept (sign-in + profile).
+Kept: the listed accounts (role, name, email, parent mobile number) and the attendance/dismissal settings.
+The keep list must include at least one active admin. The backup contains personal data: it is git-ignored;
+keep it private and delete it once you no longer need it.
 
 ## Development phases
 

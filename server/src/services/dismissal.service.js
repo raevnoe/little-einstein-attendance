@@ -47,7 +47,8 @@ import {
   toStaffDismissalView,
 } from '../models/dismissal.model.js';
 import { FETCHER_ID_PATTERN, fetcherAuthorizedFor, fetchersCollection } from '../models/fetcher.model.js';
-import { findStudentsByParent, normalizeStudentId, studentsCollection } from '../models/student.model.js';
+import { findStudentById, findStudentsByParent, normalizeStudentId, studentsCollection } from '../models/student.model.js';
+import { ALL_SECTIONS, sectionInScope, studentInScope } from '../utils/sectionScope.js';
 import { getDismissalSettings } from '../models/systemSettings.model.js';
 import { findUsersByIds } from '../models/user.model.js';
 import { sendSms } from './sms/sms.service.js';
@@ -361,6 +362,14 @@ export async function getDevOtpForParent(parentUid, studentId) {
 
 // ---- staff: list, verify, release
 
+/** Teachers act only on dismissals of students in their sections; others look like a missing record. */
+async function assertStaffScope(dismissalId, scope) {
+  if (scope.all) return;
+  const parts = parseDismissalDocId(dismissalId);
+  const student = parts ? await findStudentById(parts.studentId) : null;
+  if (!studentInScope(scope, student)) throw DISMISSAL_NOT_FOUND();
+}
+
 /** Re-checks the Fetcher at verify/release time: still active, authorized, and unchanged. */
 async function readFetcherAndStudent(tx, record) {
   const [fetcherSnap, studentSnap] = await tx.getAll(
@@ -406,7 +415,8 @@ function staffAudit(ctx, dismissalId, requestNumber, record, eventType, outcome,
  * On success the code is deleted (single use) and the record becomes "verified"; the child is
  * NOT released yet.
  */
-export async function verifyDismissalCode(ctx, dismissalId, input) {
+export async function verifyDismissalCode(ctx, dismissalId, input, { scope = ALL_SECTIONS } = {}) {
+  await assertStaffScope(dismissalId, scope);
   const staffUid = ctx.actor.uid;
   const body = asObject(input);
   rejectUnknownFields(body, ['otp', 'requestNumber']);
@@ -484,7 +494,8 @@ export async function verifyDismissalCode(ctx, dismissalId, input) {
  * Body: { requestNumber }. Separate, explicit confirmation that the verified Fetcher has the
  * child. Final: a released record can never be released (or verified) again.
  */
-export async function releaseStudent(ctx, dismissalId, input) {
+export async function releaseStudent(ctx, dismissalId, input, { scope = ALL_SECTIONS } = {}) {
+  await assertStaffScope(dismissalId, scope);
   const staffUid = ctx.actor.uid;
   const body = asObject(input);
   rejectUnknownFields(body, ['requestNumber']);
@@ -554,11 +565,12 @@ export async function getStaffDismissal(dismissalId) {
   return (await withNames([snap.data()]))[0];
 }
 
-/** Staff list for one school day (default today), newest request first. */
-export async function listDismissals({ date } = {}) {
+/** Staff list for one school day (default today), newest request first; teachers: their sections only. */
+export async function listDismissals({ date, scope = ALL_SECTIONS } = {}) {
   const schoolDate = parseSchoolDate(date);
   const records = await findDismissalsByDate(schoolDate);
   const dismissals = (await withNames(records))
+    .filter((d) => scope.all || Boolean(d.student && sectionInScope(scope, d.student.section)))
     .sort((a, b) => (b.requestedAt ?? '').localeCompare(a.requestedAt ?? ''));
   return { schoolDate, today: schoolDateOf(new Date(clock())), timeZone: env.schoolTimeZone, dismissals };
 }

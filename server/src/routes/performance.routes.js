@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ROLES } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { scopeFor } from '../utils/sectionScope.js';
 import {
   getEvaluation,
   listEvaluations,
@@ -20,25 +21,25 @@ router.use(requireAuth, requireRole(ROLES.ADMIN, ROLES.TEACHER));
 // GET /api/performance?studentId=&date=YYYY-MM-DD&area=  (no studentId and no date = today)
 router.get('/', async (req, res) => {
   const { studentId, date, area } = req.query;
-  res.json(await listEvaluations({ studentId, date, area }));
+  res.json(await listEvaluations({ studentId, date, area, scope: scopeFor(req) }));
 });
 
 // GET /api/performance/:id  (id = {studentId}_{YYYY-MM-DD}_{area})
 router.get('/:id', async (req, res) => {
-  res.json({ evaluation: await getEvaluation(parsePerformanceId(req.params.id)) });
+  res.json({ evaluation: await getEvaluation(parsePerformanceId(req.params.id), { scope: scopeFor(req) }) });
 });
 
 // POST /api/performance  { studentId, evaluationDate, area, starRating, observation }
 // Saves the ONE evaluation for student/date/area: 201 when created, 200 when it updated
 // the existing one.
 router.post('/', async (req, res) => {
-  const { created, evaluation } = await saveEvaluation(auditContext(req), req.body);
+  const { created, evaluation } = await saveEvaluation(auditContext(req), req.body, { scope: scopeFor(req) });
   res.status(created ? 201 : 200).json({ evaluation });
 });
 
 // PATCH /api/performance/:id  { starRating?, observation? }
 router.patch('/:id', async (req, res) => {
-  res.json({ evaluation: await updateEvaluation(auditContext(req), parsePerformanceId(req.params.id), req.body) });
+  res.json({ evaluation: await updateEvaluation(auditContext(req), parsePerformanceId(req.params.id), req.body, { scope: scopeFor(req) }) });
 });
 
 export default router;

@@ -27,6 +27,15 @@ import { findNotificationStatusesSince, NOTIFICATION_STATUS } from '../models/no
 import { findPerformanceInRange, findPerformanceWhere } from '../models/performance.model.js';
 import { cardStatus, findAllCards } from '../models/rfidCard.model.js';
 import { findAllStudents, normalizeStudentId } from '../models/student.model.js';
+import { ALL_SECTIONS, studentInScope } from '../utils/sectionScope.js';
+
+/** The students a staff member may report on (teachers: their sections) and a record filter. */
+function scoped(students, scope) {
+  if (scope.all) return { students, mine: () => true };
+  const visible = students.filter((s) => studentInScope(scope, s));
+  const ids = new Set(visible.map((s) => s.studentId));
+  return { students: visible, mine: (r) => ids.has(r.studentId) };
+}
 import { findUsersByIds, findUsersByRole } from '../models/user.model.js';
 import { addDays, isValidSchoolDate, schoolDateOf } from '../utils/schoolDate.js';
 import { HttpError } from '../utils/httpError.js';
@@ -129,15 +138,17 @@ function reportStatusOf(record) {
  *   students[]: per student - days with a time in, with a time out, with no time out recorded,
  *               and the records themselves. No absence totals.
  */
-export async function getAttendanceReport(query) {
+export async function getAttendanceReport(query, { scope = ALL_SECTIONS } = {}) {
   const q = readQuery(query, ['from', 'to', 'section', 'studentId']);
   const today = schoolDateOf();
   const { from, to, dates } = parseDateRange(q, today);
   const filters = { studentId: parseStudentFilter(q.studentId), section: parseSectionFilter(q.section) };
 
-  const [allStudents, allRecords] = await Promise.all([findAllStudents(), findAttendanceInRange(from, to)]);
+  const [everyStudent, schoolRecords] = await Promise.all([findAllStudents(), findAttendanceInRange(from, to)]);
   // Dates on which ANY student (whatever the filters) has a record: the school was taking attendance.
-  const datesWithRecords = new Set(allRecords.map((r) => r.schoolDate));
+  const datesWithRecords = new Set(schoolRecords.map((r) => r.schoolDate));
+  const { students: allStudents, mine } = scoped(everyStudent, scope);
+  const allRecords = schoolRecords.filter(mine);
   const recordsByStudent = new Map();
   for (const r of allRecords) {
     if (!recordsByStudent.has(r.studentId)) recordsByStudent.set(r.studentId, []);
@@ -213,7 +224,7 @@ const emptyStarCounts = () => Object.fromEntries(
  *   notEvaluated[]: matching active students with no evaluation in the range.
  * No averages across days or areas, no percentages, no grades.
  */
-export async function getPerformanceReport(query) {
+export async function getPerformanceReport(query, { scope = ALL_SECTIONS } = {}) {
   const q = readQuery(query, ['from', 'to', 'section', 'studentId', 'area']);
   const today = schoolDateOf();
   const { from, to } = parseDateRange(q, today);
@@ -223,8 +234,9 @@ export async function getPerformanceReport(query) {
     area: parseAreaFilter(q.area),
   };
 
-  const [allStudents, allRecords] = await Promise.all([findAllStudents(), findPerformanceInRange(from, to)]);
-  const records = allRecords.filter((r) => !filters.area || r.area === filters.area);
+  const [everyStudent, schoolRecords] = await Promise.all([findAllStudents(), findPerformanceInRange(from, to)]);
+  const { students: allStudents, mine } = scoped(everyStudent, scope);
+  const records = schoolRecords.filter(mine).filter((r) => !filters.area || r.area === filters.area);
   const recordsByStudent = new Map();
   for (const r of records) {
     if (!recordsByStudent.has(r.studentId)) recordsByStudent.set(r.studentId, []);
@@ -298,15 +310,20 @@ function countBy(items, keyOf) {
 }
 
 /** GET /api/reports/today (admin and teacher): today's attendance, evaluations and dismissals. */
-export async function getTodaySummary() {
+export async function getTodaySummary({ scope = ALL_SECTIONS } = {}) {
   const today = schoolDateOf();
   const nowMs = Date.now();
-  const [students, attendance, evaluations, dismissals] = await Promise.all([
+  const [everyStudent, schoolAttendance, schoolEvaluations, schoolDismissals] = await Promise.all([
     findAllStudents(),
     findAttendanceByDate(today),
     findPerformanceWhere('evaluationDate', today),
     findDismissalsByDate(today),
   ]);
+  // Teachers: only their sections' students and their records.
+  const { students, mine } = scoped(everyStudent, scope);
+  const attendance = schoolAttendance.filter(mine);
+  const evaluations = schoolEvaluations.filter(mine);
+  const dismissals = schoolDismissals.filter(mine);
   const active = new Set(students.filter((s) => s.active === true).map((s) => s.studentId));
   const withRecord = new Set(attendance.map((r) => r.studentId));
   // Same roster rule as the Daily Attendance page: active students plus anyone with a record.

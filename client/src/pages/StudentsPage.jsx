@@ -2,6 +2,7 @@ import { useState } from 'react';
 import StudentList from '../components/students/StudentList.jsx';
 import StudentDetail from '../components/students/StudentDetail.jsx';
 import StudentForm from '../components/students/StudentForm.jsx';
+import SectionsPanel from '../components/students/SectionsPanel.jsx';
 
 /**
  * Students section for staff. `canManage` (admins) shows add/edit/deactivate controls.
@@ -36,6 +37,12 @@ export default function StudentsPage({ canManage }) {
         )
       );
     default:
-      return <StudentList canManage={canManage} onView={(id) => showDetail(id)} onAdd={() => setView({ name: 'create' })} />;
+      return (
+        <div className="space-y-5">
+          {/* Admins manage the section list here (used by student records and teacher assignments). */}
+          {canManage && <SectionsPanel />}
+          <StudentList canManage={canManage} onView={(id) => showDetail(id)} onAdd={() => setView({ name: 'create' })} />
+        </div>
+      );
   }
 }

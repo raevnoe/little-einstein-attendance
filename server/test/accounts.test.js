@@ -56,7 +56,7 @@ describe('GET /api/admin/users', () => {
     const names = res.body.users.map((u) => u.displayName);
     assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b)));
     assert.deepEqual(Object.keys(res.body.users[0]).sort(),
-      ['active', 'createdAt', 'displayName', 'email', 'firstName', 'lastName', 'mobileNumber', 'role', 'uid', 'updatedAt']);
+      ['active', 'createdAt', 'displayName', 'email', 'firstName', 'lastName', 'mobileNumber', 'role', 'sections', 'uid', 'updatedAt']);
   });
 });
 

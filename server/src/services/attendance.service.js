@@ -36,6 +36,7 @@ import { getChildOfParent, matchesStudentSearch } from './student.service.js';
 import { addDays, isValidSchoolDate, schoolDateOf } from '../utils/schoolDate.js';
 import { HttpError } from '../utils/httpError.js';
 import { SYSTEM_ACTOR, UNKNOWN_SCAN_WINDOW_MS, auditInTransaction, recordAudit } from './audit.service.js';
+import { ALL_SECTIONS, studentInScope } from '../utils/sectionScope.js';
 
 const PARENT_HISTORY_DAYS = 30;
 const INVALID_UID_MESSAGE = 'RFID UID must be 4-64 hexadecimal characters (0-9, A-F).';
@@ -241,14 +242,17 @@ export function parseSchoolDate(value) {
 
 /**
  * Staff roster for one school day: every active student (plus any inactive student
- * who has a record that day), with their attendance or "absent".
+ * who has a record that day), with their attendance or "absent". Teachers (`scope`) see only
+ * their sections, and the summary counts only those students. (Scanning itself is not limited by
+ * section: the reader at the entrance records every student's attendance.)
  */
-export async function getDailyAttendance({ date, q, status } = {}) {
+export async function getDailyAttendance({ date, q, status, scope = ALL_SECTIONS } = {}) {
   const schoolDate = parseSchoolDate(date);
   const [students, records] = await Promise.all([findAllStudents(), findAttendanceByDate(schoolDate)]);
   const recordsByStudent = new Map(records.map((r) => [r.studentId, r]));
 
   const rows = students
+    .filter((s) => studentInScope(scope, s))
     .filter((s) => s.active || recordsByStudent.has(s.studentId))
     .map((s) => {
       const record = recordsByStudent.get(s.studentId);

@@ -47,3 +47,6 @@ vercel-static/
 
 # Project archives (may contain .env copies) - never commit
 *.zip
+
+# Data reset backups (contain personal data) - never commit
+server/backups/

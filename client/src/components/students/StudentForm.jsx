@@ -22,11 +22,16 @@ export default function StudentForm({ student, onSaved, onCancel }) {
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [parents, setParents] = useState({ loading: true, list: [], error: null });
+  // The admin-managed section list (Students -> Sections); the server accepts only these names.
+  const [sections, setSections] = useState({ loading: true, names: [], error: null });
 
   useEffect(() => {
     apiRequest('/admin/parents')
       .then((data) => setParents({ loading: false, list: data.parents, error: null }))
       .catch((error) => setParents({ loading: false, list: [], error: error.message }));
+    apiRequest('/admin/sections')
+      .then((data) => setSections({ loading: false, names: data.sections.map((x) => x.name), error: null }))
+      .catch((error) => setSections({ loading: false, names: [], error: error.message }));
   }, []);
 
   const set = (field) => (event) => setValues((v) => ({ ...v, [field]: event.target.value }));
@@ -60,6 +65,14 @@ export default function StudentForm({ student, onSaved, onCancel }) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
+  // A student may still carry an older section that is not on the list: keep it selectable.
+  const sameSection = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  const unlistedCurrent = isEdit && student.section && !sections.names.some((n) => sameSection(n, student.section)) ? student.section : null;
+  const sectionHint = sections.error
+    ? 'The section list could not be loaded.'
+    : !sections.loading && sections.names.length === 0
+      ? 'No sections yet. Add them under Students → Sections.'
+      : 'Sections are managed under Students → Sections.';
   // Deactivated parents are hidden, except ones already linked to this student (so the link can be seen and removed).
   const shownParents = parents.list.filter((p) => p.active || student?.parentIds?.includes(p.uid));
 
@@ -81,8 +94,12 @@ export default function StudentForm({ student, onSaved, onCancel }) {
               >
                 <input value={values.studentId} onChange={set('studentId')} disabled={isEdit} className="font-mono uppercase" />
               </Field>
-              <Field id="section" label="Section" error={fieldErrors.section} hint="e.g. Kinder A">
-                <input value={values.section} onChange={set('section')} />
+              <Field id="section" label="Section" error={fieldErrors.section} hint={sectionHint}>
+                <select value={values.section} onChange={set('section')} disabled={sections.loading}>
+                  <option value="">{sections.loading ? 'Loading sections…' : 'Choose a section'}</option>
+                  {sections.names.map((name) => <option key={name} value={name}>{name}</option>)}
+                  {unlistedCurrent && <option value={unlistedCurrent}>{unlistedCurrent} (not on the list)</option>}
+                </select>
               </Field>
               <Field id="firstName" label="First Name" error={fieldErrors.firstName}>
                 <input value={values.firstName} onChange={set('firstName')} />
