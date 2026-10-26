@@ -20,7 +20,7 @@ export function StarDisplay({ value, size = 'text-lg', showLabel = false }) {
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
       {stars}
-      <span aria-hidden="true" className="text-xs font-semibold text-brand-600">{word}</span>
+      <span aria-hidden="true" className="text-xs font-semibold text-brand-600 dark:text-brand-300">{word}</span>
     </span>
   );
 }
@@ -46,7 +46,7 @@ export function StarInput({ value, onChange, disabled, label }) {
               className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-sun-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <svg viewBox="0 0 24 24" className="h-8 w-8" aria-hidden="true" focusable="false">
-                <path d={STAR_PATH} strokeWidth="1.5" strokeLinejoin="round" className={filled ? 'fill-star stroke-star' : 'fill-white stroke-star-empty'} />
+                <path d={STAR_PATH} strokeWidth="1.5" strokeLinejoin="round" className={filled ? 'fill-star stroke-star' : 'fill-paper stroke-star-empty'} />
               </svg>
             </button>
           );

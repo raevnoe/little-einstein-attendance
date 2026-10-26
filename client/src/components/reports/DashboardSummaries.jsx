@@ -102,7 +102,7 @@ export function StaffWelcome({ account, roleLabel, onNavigate }) {
               <button
                 type="button"
                 onClick={() => onNavigate(key)}
-                className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-brand-700 shadow-sm motion-safe:transition-colors hover:bg-sun-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-400 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-600`}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-paper px-4 text-sm font-semibold text-brand-700 shadow-sm motion-safe:transition-colors hover:bg-sun-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-400 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-600`}
               >
                 <Icon className="h-4.5 w-4.5" />
                 {label}
@@ -224,7 +224,7 @@ export function AdminOverview({ onNavigate }) {
             <StatCard label="Failed" value={data.sms.failed} tone={data.sms.failed ? 'attention' : 'neutral'} />
             <StatCard label="Skipped" value={data.sms.skipped} hint="No parent mobile number on file" />
           </Group>
-          <p className="flex items-center gap-2 text-xs text-brand-600">
+          <p className="flex items-center gap-2 text-xs text-brand-600 dark:text-brand-300">
             <InfoIcon className="h-4 w-4 shrink-0" />
             Arrival and departure messages only. Dismissal codes are not counted here.
           </p>

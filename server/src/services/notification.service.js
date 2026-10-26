@@ -11,6 +11,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { formatSchoolTime } from '../utils/schoolDate.js';
 import { NOTIFICATION_EVENTS, NOTIFICATION_STATUS, notificationDocId, notificationsCollection } from '../models/notification.model.js';
 import { findUsersByIds } from '../models/user.model.js';
+import { getSmsSettings } from '../models/systemSettings.model.js';
 import { sendSms } from './sms/sms.service.js';
 
 const ALREADY_EXISTS = 6; // Firestore gRPC status
@@ -28,18 +29,26 @@ export function attendanceSmsMessage(event, student, occurredAt) {
 /**
  * Unique, valid mobile numbers of the student's ACTIVE parent accounts.
  * Returns [{ to: '+639XXXXXXXXX', parentIds: [...] }] (parents sharing a number share one SMS).
+ * With `honourOptOut`, parents who turned off arrival/departure SMS (users/{uid}.attendanceSms
+ * === false) are left out; `optedOut` counts them.
  */
-export async function parentRecipients(parentIds = []) {
+export async function parentRecipients(parentIds = [], { honourOptOut = false } = {}) {
   const parents = await findUsersByIds(parentIds);
   const byNumber = new Map();
+  let optedOut = 0;
   for (const parent of parents) {
     if (parent.role !== ROLES.PARENT || parent.active !== true) continue;
     const to = normalizePhMobileNumber(parent.mobileNumber);
     if (!to) continue;
+    if (honourOptOut && parent.attendanceSms === false) {
+      optedOut += 1;
+      continue;
+    }
     if (!byNumber.has(to)) byNumber.set(to, []);
     byNumber.get(to).push(parent.uid);
   }
-  return [...byNumber.entries()].map(([to, ids]) => ({ to, parentIds: ids }));
+  const recipients = [...byNumber.entries()].map(([to, ids]) => ({ to, parentIds: ids }));
+  return Object.assign(recipients, { optedOut });
 }
 
 /** Sends to one number unless this event was already sent/attempted for it. */
@@ -85,11 +94,15 @@ async function recordSkipped(base, reason) {
 /**
  * Texts the student's parents about an arrival/departure. Call ONLY after the attendance
  * transaction has committed. Returns a summary without phone numbers, for staff display:
- *   { event, status: sent | partial | failed | skipped | already-notified, recipients, sent, failed }
+ *   { event, status: sent | partial | failed | skipped | already-notified | off | opted-out, recipients, sent, failed }
+ * `off` = turned off in School Settings; `opted-out` = every parent with a number turned them off.
+ * Neither is a problem, so neither writes a notifications record.
  */
 export async function notifyAttendanceEvent({ event, student, attendanceId, occurredAt }) {
   const summary = { event, status: NOTIFICATION_STATUS.FAILED, recipients: 0, sent: 0, failed: 0 };
   try {
+    const { attendanceSmsEnabled, allowParentSmsOptOut } = await getSmsSettings();
+    if (!attendanceSmsEnabled) return { ...summary, status: 'off' };
     const base = {
       studentId: student.studentId,
       attendanceId,
@@ -97,7 +110,8 @@ export async function notifyAttendanceEvent({ event, student, attendanceId, occu
       channel: 'sms',
       message: attendanceSmsMessage(event, student, occurredAt),
     };
-    const recipients = await parentRecipients(student.parentIds ?? []);
+    const recipients = await parentRecipients(student.parentIds ?? [], { honourOptOut: allowParentSmsOptOut });
+    if (recipients.length === 0 && recipients.optedOut > 0) return { ...summary, status: 'opted-out' };
     if (recipients.length === 0) {
       await recordSkipped(base, 'no-parent-mobile-number');
       return { ...summary, status: NOTIFICATION_STATUS.SKIPPED };

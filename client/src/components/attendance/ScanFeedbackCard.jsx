@@ -18,7 +18,7 @@ export default function ScanFeedbackCard({ uid, result, timeZone, onDismiss }) {
   if (!result) {
     return (
       <div className="flex items-center gap-4 rounded-2xl border-2 border-brand-100 bg-canvas p-5">
-        <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+        <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:text-brand-300">
           <RfidCardIcon className="h-7 w-7" />
         </span>
         <div className="min-w-0">

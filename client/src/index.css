@@ -76,6 +76,78 @@
   --color-star-empty: #c3c6eb;
 }
 
+/*
+ * Dark mode (Settings -> Appearance; lib/theme.js sets <html data-theme="dark"> for "Dark", or for
+ * "Match this device" when the device is in dark mode). The SAME tokens get dark values, so every
+ * screen follows without per-component changes. In dark mode the numbers keep their ROLE, not
+ * their lightness: 50-200 are dark tinted surfaces and borders, 500-900 are light text colours.
+ * brand-600 stays a strong navy because it is mainly a background with white text (buttons, hero);
+ * the few places that use it as text add `dark:text-brand-300`. `dark:` utilities use this variant.
+ * Printing always uses the light colours (screen only).
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@media screen {
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --color-paper: #161a33;
+    --color-canvas: #0d1024;
+
+    --color-brand-50: #1e2246;
+    --color-brand-100: #2a2f5c;
+    --color-brand-200: #3b4178;
+    --color-brand-300: #b3b6f3;
+    --color-brand-500: #aeb1ec;
+    --color-brand-600: #4549bf;
+    --color-brand-700: #d3d5f7;
+    --color-brand-800: #e2e3fa;
+    --color-brand-900: #f1f2fd;
+
+    --color-leaf-50: #11301a;
+    --color-leaf-100: #184224;
+    --color-leaf-300: #2f7a3c;
+    --color-leaf-700: #8fe09c;
+
+    --color-sky-50: #0b2738;
+    --color-sky-100: #10384e;
+    --color-sky-700: #86d6f6;
+
+    --color-sun-50: #2d290b;
+    --color-sun-100: #474013;
+    --color-sun-700: #f4e77e;
+
+    --color-grape-50: #271a39;
+    --color-grape-100: #382750;
+    --color-grape-500: #8d5cbf;
+    --color-grape-700: #d7bdf0;
+
+    --color-mist-400: #8b8fa8;
+
+    --color-star-empty: #3b4178;
+
+    --color-red-50: #3a1418;
+    --color-red-100: #4d1a1f;
+    --color-red-200: #6b2329;
+    --color-red-400: #f87171;
+    --color-red-700: #fca5a5;
+    --color-red-800: #fecaca;
+
+    --color-amber-50: #33260a;
+    --color-amber-100: #4a370d;
+    --color-amber-200: #6b4f12;
+    --color-amber-300: #8a6716;
+    --color-amber-800: #fcd68a;
+    --color-amber-900: #fde7b0;
+
+    --color-slate-500: #94a3b8;
+  }
+
+  :root[data-theme='dark'] body {
+    background-color: var(--color-canvas);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;

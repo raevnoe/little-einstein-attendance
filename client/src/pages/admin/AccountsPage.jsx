@@ -151,7 +151,7 @@ function TeacherSections({ user, sectionNames, onSaved }) {
       ) : (
         <div className="mt-2 flex flex-wrap gap-2">
           {sectionNames.map((name) => (
-            <label key={name} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-sm font-medium text-brand-900 ring-1 ring-brand-200 has-[:checked]:bg-sky-50 has-[:checked]:ring-sky-500">
+            <label key={name} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-paper px-3 text-sm font-medium text-brand-900 ring-1 ring-brand-200 has-[:checked]:bg-sky-50 has-[:checked]:ring-sky-500">
               <input type="checkbox" checked={chosen.includes(name)} onChange={() => toggle(name)} className="h-4 w-4 accent-brand-600" />
               {name}
             </label>
@@ -196,7 +196,7 @@ function AccountRow({ user, isSelf, onChanged, sectionNames }) {
   const sendEmail = () => run(() => sendPasswordSetupEmail(user.email), `Password setup email sent to ${user.email}.`);
 
   return (
-    <li className="flex flex-col rounded-2xl border border-brand-100 bg-white p-4 shadow-sm sm:p-5">
+    <li className="flex flex-col rounded-2xl border border-brand-100 bg-paper p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <InitialsAvatar text={initials(user)} tone={AVATAR_TONES[user.role]} className="h-11 w-11 text-sm" />

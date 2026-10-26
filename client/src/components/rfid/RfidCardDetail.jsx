@@ -120,7 +120,7 @@ export default function RfidCardDetail({ uid, canManage, notice, onBack }) {
                   )}
                   <StudentPicker value={selected} onChange={setSelected} excludeStudentId={card.studentId} />
                   {selected && (
-                    <p className="rounded-xl bg-white px-3 py-2 text-sm text-brand-900 ring-1 ring-brand-100">
+                    <p className="rounded-xl bg-paper px-3 py-2 text-sm text-brand-900 ring-1 ring-brand-100">
                       {action === 'reassign' ? 'Reassign to' : 'Assign to'}:{' '}
                       <strong>{selected.studentId} – {selected.firstName} {selected.lastName}</strong>
                     </p>

@@ -240,7 +240,7 @@ export default function AuditLogPage() {
                     <p className="font-semibold text-brand-900">{auditEventLabel(entry.eventType)}</p>
                     <p className="text-brand-700">{actorText(entry.actor)}</p>
                     {entry.target && (
-                      <p className="break-all text-xs text-brand-600">
+                      <p className="break-all text-xs text-brand-600 dark:text-brand-300">
                         {TARGET_LABELS[entry.target.type] ?? entry.target.type}: <span className="font-mono">{entry.target.id ?? '—'}</span>
                       </p>
                     )}

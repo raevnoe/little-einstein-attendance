@@ -13,6 +13,15 @@
     <meta name="apple-mobile-web-app-title" content="Little Einstein" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Little Einstein Attendance</title>
+    <script>
+      // Dark mode before the first paint (same rules as src/lib/theme.js; that file takes over after loading).
+      (function () {
+        var choice = "light";
+        try { choice = localStorage.getItem("led.theme") || "light"; } catch (e) {}
+        var dark = choice === "dark" || (choice !== "light" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

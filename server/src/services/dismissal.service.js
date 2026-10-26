@@ -32,7 +32,13 @@
 // parents. They name the Fetcher (as the Dismissal screens do) but never contain the code.
 import { randomBytes, randomInt, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { DISMISSAL_OTP_PATTERN, DISMISSAL_STATUS, normalizePhMobileNumber } from '@led/shared';
+import {
+  DEFAULT_DISMISSAL_MAX_CODES_PER_DAY,
+  DEFAULT_DISMISSAL_REQUEST_COOLDOWN_SECONDS,
+  DISMISSAL_OTP_PATTERN,
+  DISMISSAL_STATUS,
+  normalizePhMobileNumber,
+} from '@led/shared';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { env } from '../config/env.js';
@@ -59,8 +65,9 @@ import { parseSchoolDate } from './attendance.service.js';
 import { schoolDateOf } from '../utils/schoolDate.js';
 import { HttpError } from '../utils/httpError.js';
 
-export const REQUEST_COOLDOWN_SECONDS = 60;
-export const MAX_CODE_REQUESTS_PER_DAY = 5;
+// Defaults; the live values are School Settings (systemSettings/dismissal).
+export const REQUEST_COOLDOWN_SECONDS = DEFAULT_DISMISSAL_REQUEST_COOLDOWN_SECONDS;
+export const MAX_CODE_REQUESTS_PER_DAY = DEFAULT_DISMISSAL_MAX_CODES_PER_DAY;
 
 const SCHOOL_NAME = 'Little Einstein Discovery School';
 const HASH_BYTES = 32;
@@ -178,7 +185,7 @@ export async function requestDismissalCode(parent, input) {
       'Your account has no mobile number for SMS. Please ask the school to add one.'));
   }
 
-  const { otpExpiryMinutes, otpMaxAttempts } = await getDismissalSettings();
+  const { otpExpiryMinutes, otpMaxAttempts, requestCooldownSeconds, maxCodesPerDay } = await getDismissalSettings();
   const otp = generateOtp();
   const salt = randomBytes(16).toString('hex');
 
@@ -202,11 +209,11 @@ export async function requestDismissalCode(parent, input) {
       throw new HttpError(409, 'dismissal/already-verified',
         `A teacher has already verified the code for ${student.firstName}. No new code is needed.`);
     }
-    if (existing && (existing.requestCount ?? 0) >= MAX_CODE_REQUESTS_PER_DAY) {
+    if (existing && (existing.requestCount ?? 0) >= maxCodesPerDay) {
       throw new HttpError(429, 'dismissal/daily-limit',
-        `The limit of ${MAX_CODE_REQUESTS_PER_DAY} codes per child per day has been reached. Please contact the school.`);
+        `The limit of ${maxCodesPerDay} codes per child per day has been reached. Please contact the school.`);
     }
-    const waitMs = existing?.requestedAt ? existing.requestedAt.toMillis() + REQUEST_COOLDOWN_SECONDS * 1000 - at.toMillis() : 0;
+    const waitMs = existing?.requestedAt ? existing.requestedAt.toMillis() + requestCooldownSeconds * 1000 - at.toMillis() : 0;
     if (waitMs > 0) {
       throw new HttpError(429, 'dismissal/too-soon',
         `Please wait ${Math.ceil(waitMs / 1000)} seconds before requesting another code.`);

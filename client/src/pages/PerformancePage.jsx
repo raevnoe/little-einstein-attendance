@@ -26,7 +26,7 @@ export default function PerformancePage() {
             aria-selected={view === v.key}
             onClick={() => setView(v.key)}
             className={`min-h-11 rounded-xl px-4 text-sm font-semibold motion-safe:transition-colors ${FOCUS_RING} ${
-              view === v.key ? 'bg-white text-brand-900 shadow-sm ring-1 ring-brand-100' : 'text-brand-700 hover:bg-white/70'
+              view === v.key ? 'bg-paper text-brand-900 shadow-sm ring-1 ring-brand-100' : 'text-brand-700 hover:bg-paper/70'
             }`}
           >
             {v.label}

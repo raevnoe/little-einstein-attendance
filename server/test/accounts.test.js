@@ -56,7 +56,7 @@ describe('GET /api/admin/users', () => {
     const names = res.body.users.map((u) => u.displayName);
     assert.deepEqual(names, [...names].sort((a, b) => a.localeCompare(b)));
     assert.deepEqual(Object.keys(res.body.users[0]).sort(),
-      ['active', 'createdAt', 'displayName', 'email', 'firstName', 'lastName', 'mobileNumber', 'role', 'sections', 'uid', 'updatedAt']);
+      ['active', 'attendanceSms', 'createdAt', 'displayName', 'email', 'firstName', 'lastName', 'mobileNumber', 'role', 'sections', 'uid', 'updatedAt']);
   });
 });
 
@@ -87,7 +87,9 @@ describe('POST /api/admin/users', () => {
     assert.equal(entry.actor.role, 'admin');
     assert.equal(entry.route, 'POST /api/admin/users');
     assert.deepEqual(entry.details, { role: 'parent' });
-    const stored = JSON.stringify(entry);
+    // Timestamps and the random uid are left out: their digits could contain "555" by chance.
+    const { occurredAt, createdAt, target, ...rest } = entry;
+    const stored = JSON.stringify(rest);
     assert.ok(!stored.includes('maria') && !stored.includes('555'), 'no email or number in the audit entry');
   });
 

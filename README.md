@@ -168,6 +168,11 @@ and match that role.
 | PATCH  | `/api/admin/users/:uid/sections`   | admin              | A teacher's sections `{ sections: [...] }` (teachers see only these students) |
 | GET    | `/api/notifications?after=`        | admin, teacher, parent | Own in-app notifications (the bell), newest first |
 | POST   | `/api/notifications/seen`          | admin, teacher, parent | Mark own notifications seen `{ upTo }`         |
+| GET    | `/api/admin/settings`              | admin              | School Settings (RFID, dismissal codes, SMS)        |
+| PATCH  | `/api/admin/settings`              | admin              | Change School Settings `{ group: { field: value } }` (audited) |
+| GET    | `/api/account`                     | admin, teacher, parent | Own profile (+ SMS options for parents)        |
+| PATCH  | `/api/account/preferences`         | parent             | Own arrival/departure SMS on/off `{ attendanceSms }` |
+| POST   | `/api/account/sign-out-everywhere` | admin, teacher, parent | End every session of the own account          |
 
 RFID UIDs are normalized (whitespace, `:` and `-` removed, uppercased) and must be 4–64 hex
 characters. A student has at most one card; every assignment change runs in a Firestore
@@ -184,7 +189,8 @@ first scan = time in, next scan after the debounce = time out, later scans chang
 Unknown, inactive, or unassigned cards and inactive students never create attendance.
 
 The RFID debounce (default 10 s) is read from the Firestore document `systemSettings/attendance`
-field `rfidDebounceSeconds` (integer 0–300; missing/invalid = default; cached for 30 s).
+field `rfidDebounceSeconds` (integer 0–300; missing/invalid = default; cached for 30 s). Admins change it
+(and the dismissal and SMS settings) on **Settings → School settings**.
 
 `POST /api/attendance/scan` receives a card UID from the staff Attendance page and calls `processRfidScan()`.
 
@@ -268,7 +274,8 @@ Dismissal flow:
 Rules: one record per child per school day (`dismissalRecords/{studentId}_{YYYY-MM-DD}`); a new
 code replaces the previous one; codes expire after 10 minutes and lock after 5 incorrect entries
 (`systemSettings/dismissal` fields `otpExpiryMinutes` 1–30 and `otpMaxAttempts` 3–10); at most one
-code request per child per 60 seconds and 5 per day; a deactivated, edited, or no-longer-authorized
+code request per child per 60 seconds and 5 per day (`requestCooldownSeconds` 30–600, `maxCodesPerDay`
+1–10; all four are on **Settings → School settings**); a deactivated, edited, or no-longer-authorized
 Fetcher cancels the request at verification or release. Attendance is not involved: a time-out
 scan is not a dismissal, and a release does not record a time-out.
 

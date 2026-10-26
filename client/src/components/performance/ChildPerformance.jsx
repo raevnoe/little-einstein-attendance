@@ -12,7 +12,7 @@ const DAYS_STEP = 3;
 function EvaluationDay({ day, defaultOpen }) {
   return (
     <li>
-      <details open={defaultOpen} className="group overflow-hidden rounded-2xl bg-white ring-1 ring-brand-100 open:shadow-sm">
+      <details open={defaultOpen} className="group overflow-hidden rounded-2xl bg-paper ring-1 ring-brand-100 open:shadow-sm">
         <summary className={`flex min-h-12 cursor-pointer list-none flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 hover:bg-canvas [&::-webkit-details-marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500`}>
           <span className="flex items-center gap-3 font-semibold text-brand-900">
             <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-xl bg-sun-50 text-star">
@@ -30,10 +30,10 @@ function EvaluationDay({ day, defaultOpen }) {
           </span>
         </summary>
         <div className="border-t border-brand-100 bg-canvas/60 px-4 pb-4 pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Daily Average Star Rating · {day.dailyAverageStarRating} of 5</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-300">Daily Average Star Rating · {day.dailyAverageStarRating} of 5</p>
           <ul className="mt-3 space-y-2.5">
             {day.evaluations.map((e) => (
-              <li key={e.area} className="rounded-xl bg-white p-3 text-sm ring-1 ring-brand-100">
+              <li key={e.area} className="rounded-xl bg-paper p-3 text-sm ring-1 ring-brand-100">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-semibold text-brand-900">{performanceAreaLabel(e.area)}</span>
                   <StarDisplay value={e.starRating} size="text-lg" showLabel />
@@ -102,7 +102,7 @@ export default function ChildPerformance({ studentId, initialDate = '', onLoaded
       actions={
         <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
           <div className="min-w-0 flex-1 sm:flex-none">
-            <label htmlFor={inputId} className="block text-xs font-semibold text-brand-600">Date</label>
+            <label htmlFor={inputId} className="block text-xs font-semibold text-brand-600 dark:text-brand-300">Date</label>
             <input
               id={inputId}
               type="date"

@@ -56,7 +56,7 @@ export default function SignOutButton({ className = '', confirm = true }) {
           // A click on the dimmed backdrop lands on the <dialog> element itself.
           onClick={(event) => { if (event.target === dialogRef.current && !signingOut) close(); }}
           onCancel={(event) => { if (signingOut) event.preventDefault(); }}
-          className="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-brand-100 bg-white p-0 text-left shadow-xl backdrop:bg-brand-900/40"
+          className="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-brand-100 bg-paper p-0 text-left shadow-xl backdrop:bg-brand-900/40 dark:backdrop:bg-black/60"
         >
           <div className="p-6">
             <span aria-hidden="true" className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-brand-700">

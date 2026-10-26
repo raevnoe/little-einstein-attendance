@@ -24,7 +24,7 @@ export default function ReportsPage() {
             aria-selected={view === key}
             onClick={() => setView(key)}
             className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold motion-safe:transition-colors ${FOCUS_RING} ${
-              view === key ? 'bg-white text-brand-900 shadow-sm ring-1 ring-brand-100' : 'text-brand-700 hover:bg-white/70'
+              view === key ? 'bg-paper text-brand-900 shadow-sm ring-1 ring-brand-100' : 'text-brand-700 hover:bg-paper/70'
             }`}
           >
             <Icon className="h-4.5 w-4.5" />

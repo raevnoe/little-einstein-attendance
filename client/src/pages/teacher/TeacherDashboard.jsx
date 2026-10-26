@@ -8,8 +8,9 @@ import AttendancePage from '../AttendancePage.jsx';
 import PerformancePage from '../PerformancePage.jsx';
 import DismissalPage from '../DismissalPage.jsx';
 import ReportsPage from '../ReportsPage.jsx';
+import SettingsPage from '../SettingsPage.jsx';
 import { StaffWelcome, TeacherSectionsNote, TodaySummary } from '../../components/reports/DashboardSummaries.jsx';
-import { AttendanceIcon, DismissalIcon, HomeIcon, ReportsIcon, RfidCardIcon, StarIcon, StudentsIcon } from '../../components/ui/icons.jsx';
+import { AttendanceIcon, DismissalIcon, HomeIcon, ReportsIcon, RfidCardIcon, StarIcon, StudentsIcon, SettingsIcon } from '../../components/ui/icons.jsx';
 
 const NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: HomeIcon },
@@ -19,8 +20,9 @@ const NAV = [
   { key: 'reports', label: 'Reports', icon: ReportsIcon },
   { key: 'students', label: 'Students', icon: StudentsIcon },
   { key: 'rfid', label: 'RFID Cards', icon: RfidCardIcon },
+  { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
-const TITLES = { attendance: 'Daily Attendance', performance: 'Performance Evaluation', dismissal: 'Dismissal Verification', reports: 'Reports', students: 'Students', rfid: 'RFID Cards' };
+const TITLES = { attendance: 'Daily Attendance', performance: 'Performance Evaluation', dismissal: 'Dismissal Verification', reports: 'Reports', students: 'Students', rfid: 'RFID Cards', settings: 'Settings' };
 
 // Teachers monitor Daily Attendance, record Performance Evaluations, and view students (read-only).
 export default function TeacherDashboard({ section, onSectionChange }) {
@@ -52,6 +54,8 @@ export default function TeacherDashboard({ section, onSectionChange }) {
         <ReportsPage key={visit} />
       ) : section === 'students' ? (
         <StudentsPage key={visit} canManage={false} />
+      ) : section === 'settings' ? (
+        <SettingsPage key={visit} />
       ) : section === 'rfid' ? (
         <RfidCardsPage key={visit} canManage={false} />
       ) : (

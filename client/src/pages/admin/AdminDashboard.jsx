@@ -8,11 +8,12 @@ import AttendancePage from '../AttendancePage.jsx';
 import PerformancePage from '../PerformancePage.jsx';
 import DismissalPage from '../DismissalPage.jsx';
 import ReportsPage from '../ReportsPage.jsx';
+import SettingsPage from '../SettingsPage.jsx';
 import { AdminOverview, StaffWelcome, TodaySummary } from '../../components/reports/DashboardSummaries.jsx';
 import FetchersAdminPage from './FetchersAdminPage.jsx';
 import AuditLogPage from './AuditLogPage.jsx';
 import AccountsPage from './AccountsPage.jsx';
-import { AttendanceIcon, AuditIcon, DismissalIcon, FetcherIcon, HomeIcon, ReportsIcon, RfidCardIcon, StarIcon, StudentsIcon, UserIcon } from '../../components/ui/icons.jsx';
+import { AttendanceIcon, AuditIcon, DismissalIcon, FetcherIcon, HomeIcon, ReportsIcon, RfidCardIcon, StarIcon, StudentsIcon, UserIcon, SettingsIcon } from '../../components/ui/icons.jsx';
 
 const NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: HomeIcon },
@@ -25,8 +26,9 @@ const NAV = [
   { key: 'fetchers', label: 'Fetchers', icon: FetcherIcon },
   { key: 'accounts', label: 'Accounts', icon: UserIcon },
   { key: 'audit', label: 'Audit Log', icon: AuditIcon },
+  { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
-const TITLES = { attendance: 'Daily Attendance', performance: 'Performance Evaluation', dismissal: 'Dismissal Verification', reports: 'Reports', fetchers: 'Fetchers', accounts: 'Accounts', audit: 'Audit Log', students: 'Students', rfid: 'RFID Cards' };
+const TITLES = { attendance: 'Daily Attendance', performance: 'Performance Evaluation', dismissal: 'Dismissal Verification', reports: 'Reports', fetchers: 'Fetchers', accounts: 'Accounts', audit: 'Audit Log', students: 'Students', rfid: 'RFID Cards', settings: 'Settings' };
 
 export default function AdminDashboard({ section, onSectionChange }) {
   const { account } = useAuth();
@@ -63,6 +65,8 @@ export default function AdminDashboard({ section, onSectionChange }) {
         <ReportsPage key={visit} />
       ) : section === 'students' ? (
         <StudentsPage key={visit} canManage />
+      ) : section === 'settings' ? (
+        <SettingsPage key={visit} />
       ) : section === 'rfid' ? (
         <RfidCardsPage key={visit} canManage />
       ) : (

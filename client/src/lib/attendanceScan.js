@@ -25,6 +25,8 @@ export function smsSummary(sms) {
     case 'sent': return { error: false, text: `${what} sent to ${numbers(sms.sent)}.` };
     case 'partial': return { error: true, text: `${what} sent to ${sms.sent} of ${numbers(sms.recipients)}; ${sms.failed} failed.` };
     case 'skipped': return { error: true, text: `No SMS sent: no linked parent account has a mobile number.` };
+    case 'off': return { error: false, text: 'No SMS: arrival and departure SMS are turned off in School Settings.' };
+    case 'opted-out': return { error: false, text: 'No SMS: the parents turned off arrival and departure SMS.' };
     default: return { error: true, text: `${what} could not be sent. The attendance was still recorded.` };
   }
 }

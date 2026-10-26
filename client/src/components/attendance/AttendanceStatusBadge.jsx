@@ -4,7 +4,7 @@ import { PARENT_STATUS_LABELS, STAFF_STATUS_LABELS } from '../../lib/attendanceS
 const STYLES = {
   [ATTENDANCE_STATUS.CHECKED_IN]: ['bg-leaf-100 text-leaf-700', 'bg-leaf-400'],
   [ATTENDANCE_STATUS.CHECKED_OUT]: ['bg-brand-100 text-brand-700', 'bg-brand-500'],
-  [ATTENDANCE_STATUS.ABSENT]: ['bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-200', 'bg-mist-400'],
+  [ATTENDANCE_STATUS.ABSENT]: ['bg-brand-50 text-brand-600 dark:text-brand-300 ring-1 ring-inset ring-brand-200', 'bg-mist-400'],
 };
 
 /** `audience="parent"` switches to parent-friendly wording; the default keeps the staff labels. */

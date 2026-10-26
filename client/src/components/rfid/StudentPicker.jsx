@@ -48,7 +48,7 @@ export default function StudentPicker({ value, onChange, excludeStudentId }) {
             <label
               key={s.studentId}
               className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm motion-safe:transition-colors ${
-                checked ? 'border-brand-500 bg-brand-50' : 'border-brand-100 bg-white hover:bg-canvas'
+                checked ? 'border-brand-500 bg-brand-50' : 'border-brand-100 bg-paper hover:bg-canvas'
               }`}
             >
               <input type="radio" name="picker-student" checked={checked} onChange={() => onChange(s)} className="h-4 w-4 accent-brand-600" />

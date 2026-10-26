@@ -50,3 +50,9 @@ export function parentSmsContact(parent) {
   if (parent?.hasMobileNumber) return { kind: 'on-file', text: 'number on file' };
   return { kind: 'none', text: 'no mobile number' };
 }
+
+/** "+639171234567" -> "+63 917 ••• 4567" (Settings shows a parent's own number partly hidden). */
+export function maskMobileNumber(number) {
+  const match = /^\+63(\d{3})\d{3}(\d{4})$/.exec(number ?? '');
+  return match ? `+63 ${match[1]} ••• ${match[2]}` : null;
+}

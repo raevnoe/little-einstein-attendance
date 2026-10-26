@@ -1816,6 +1816,46 @@ systemSettings/sections, and every account (Auth + profile) not kept; kept accou
 Refuses if a kept email has no account or no ACTIVE admin is kept. Tests: `server/test/dataReset.test.js` (the fake now has
 `listUsers` and query snapshots carry `ref`).
 
+Settings + dark mode (developer request, 2026-10-27; PENDING developer browser test). No new packages:
+
+* Section key `settings` in all three dashboards (`/<role>-dashboard/settings`), `pages/SettingsPage.jsx` +
+  `components/settings/`. Everyone: My account (name/email/role READ ONLY; teachers see their sections), Appearance
+  (Match this device / Light / Dark + the existing sound toggle; per device), Change password (Firebase
+  reauthenticate + updatePassword in the browser, `lib/passwordChange.js`; nothing passes through the API; not
+  audited - the server cannot observe it), Sign out on all devices (`POST /api/account/sign-out-everywhere` ->
+  revokeRefreshTokens of the CALLER only + `user.signed-out-everywhere` audit; requireAuth's checkRevoked then refuses
+  every older token, then the client signs out).
+* Parents: own number shown partly hidden (`maskMobileNumber`); parents can NOT change it (dismissal codes go there;
+  a hijacked session must not be able to redirect them). Arrival/departure SMS on/off = `users/{uid}.attendanceSms`
+  (`PATCH /api/account/preferences` parent only, body `{ attendanceSms }` only, audited
+  `user.sms-preference-changed`; `toPublicUser` returns it, null for staff). Dismissal-code SMS cannot be turned off.
+* Admins: School settings (`GET/PATCH /api/admin/settings`, `services/settings.service.js`). Fields/limits/defaults =
+  shared `SCHOOL_SETTINGS` (shared/src/settings.js): attendance.rfidDebounceSeconds 0-300; dismissal.otpExpiryMinutes
+  1-30, otpMaxAttempts 3-10, requestCooldownSeconds 30-600 (was the constant 60), maxCodesPerDay 1-10 (was 5);
+  sms.attendanceSmsEnabled, sms.allowParentSmsOptOut (both default true). Unknown group/field -> 400, bad value -> 400
+  per field (`details.fields['group.field']`). Only changed fields are written, one transaction, one
+  `settings.changed` audit entry per changed group (category `settings`, target type `settings`, details
+  `changes: ["otpExpiryMinutes: 10 -> 15"]`). `models/systemSettings.model.js` now reads every group generically
+  (30 s cache; saving clears this instance's cache, other serverless instances follow within 30 s).
+* SMS: `notifyAttendanceEvent` returns status `off` (school switch; no notifications record, not audited, no admin
+  bell) or `opted-out` (every parent with a number opted out, honoured only while allowParentSmsOptOut; no record,
+  audited as success). `smsSummary` shows both as non-errors.
+* Dark mode is OPTIONAL (developer request): the app is LIGHT by default for everyone; `components/ThemeToggle.jsx`
+  (moon/sun button) lets anyone switch it - landing header, login page, staff sidebar (next to Sound), header from
+  640px, phone user line. Settings -> Appearance offers Light / Dark / Match this device.
+* Dark mode: `lib/theme.js` sets `<html data-theme>` (localStorage `led.theme`; index.html applies it before first paint;
+  meta theme-color follows). index.css redefines the SAME colour tokens under `:root[data-theme='dark']` inside
+  `@media screen` (printing stays light) + `@custom-variant dark`. Rule: in dark, 50-200 = dark surfaces/borders and
+  500-900 = light text; brand-600 stays a navy BACKGROUND, so every `text-brand-600` got `dark:text-brand-300`.
+  `bg-white` surfaces became `bg-paper` (identical in light) except the two white logo discs; primary/danger-solid
+  buttons and the sign-out dialog backdrop have dark overrides. New screens: use paper/canvas/brand tokens, never
+  bg-white for surfaces.
+* Tests: `server/test/settings.test.js` (10), client `test/settings.test.js` (4). The accounts-test privacy check
+  ignored timestamps/uids (random digits could contain "555"; it failed once by chance).
+* Checked by Claude in the scratch harness (mocked auth/API): Settings for all three roles in light and dark, landing,
+  login and parent dashboard in dark. NOT checked: the real logo image on dark backgrounds (the harness does not load
+  images), staff work screens with real data in dark, the password change against real Firebase.
+
 Page addresses (developer request, 2026-10-24; PENDING developer browser test). Client only, no new packages:
 
 * `/` landing, `/login`, `/admin-dashboard`, `/teacher-dashboard`, `/parent-dashboard` + one section part:

@@ -12,6 +12,7 @@ export const AUDIT_CATEGORIES = Object.freeze({
   FETCHER: 'fetcher',
   DISMISSAL: 'dismissal',
   SMS: 'sms',
+  SETTINGS: 'settings',
 });
 
 export const AUDIT_CATEGORY_LABELS = Object.freeze({
@@ -24,6 +25,7 @@ export const AUDIT_CATEGORY_LABELS = Object.freeze({
   fetcher: 'Fetchers',
   dismissal: 'Dismissal Verification',
   sms: 'SMS',
+  settings: 'School settings',
 });
 
 export const AUDIT_OUTCOMES = Object.freeze({
@@ -32,7 +34,7 @@ export const AUDIT_OUTCOMES = Object.freeze({
   DENIED: 'denied',
 });
 
-export const AUDIT_TARGET_TYPES = Object.freeze(['user', 'student', 'section', 'rfidCard', 'attendance', 'performance', 'fetcher', 'dismissal', 'route']);
+export const AUDIT_TARGET_TYPES = Object.freeze(['user', 'student', 'section', 'rfidCard', 'attendance', 'performance', 'fetcher', 'dismissal', 'settings', 'route']);
 
 // eventType -> { category, label }. Every event the server can record is listed here.
 export const AUDIT_EVENTS = Object.freeze({
@@ -45,6 +47,8 @@ export const AUDIT_EVENTS = Object.freeze({
   'user.reactivated': { category: 'account', label: 'Account reactivated' },
   'user.mobile-number-changed': { category: 'account', label: 'Parent mobile number changed' },
   'user.sections-changed': { category: 'account', label: 'Teacher sections changed' },
+  'user.sms-preference-changed': { category: 'account', label: 'Parent changed arrival/departure SMS preference' },
+  'user.signed-out-everywhere': { category: 'account', label: 'Signed out on all devices' },
 
   'student.created': { category: 'student', label: 'Student created' },
   'student.updated': { category: 'student', label: 'Student updated' },
@@ -78,6 +82,8 @@ export const AUDIT_EVENTS = Object.freeze({
   'dismissal.release-failed': { category: 'dismissal', label: 'Release not completed' },
 
   'sms.attendance-notification': { category: 'sms', label: 'Attendance SMS' },
+
+  'settings.changed': { category: 'settings', label: 'School settings changed' },
 });
 
 export const AUDIT_EVENT_TYPES = Object.freeze(Object.keys(AUDIT_EVENTS));

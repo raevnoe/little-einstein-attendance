@@ -9,3 +9,4 @@ export * from './dismissal.js';
 export * from './reports.js';
 export * from './audit.js';
 export * from './notifications.js';
+export * from './settings.js';

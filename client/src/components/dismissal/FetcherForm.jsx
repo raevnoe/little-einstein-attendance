@@ -98,7 +98,7 @@ export default function FetcherForm({ fetcher, options, onSaved, onCancel }) {
         <legend className="text-sm font-semibold text-brand-900">May collect</legend>
         <div className="mt-1.5 flex flex-wrap gap-2">
           {options.map((child) => (
-            <label key={child.studentId} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-white px-3 text-sm font-medium text-brand-900 ring-1 ring-brand-200 has-[:checked]:bg-leaf-50 has-[:checked]:ring-leaf-400 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500">
+            <label key={child.studentId} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-paper px-3 text-sm font-medium text-brand-900 ring-1 ring-brand-200 has-[:checked]:bg-leaf-50 has-[:checked]:ring-leaf-400 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500">
               <input type="checkbox" checked={studentIds.includes(child.studentId)} onChange={() => toggle(child.studentId)} className="h-4 w-4 accent-brand-600" />
               {child.firstName} {child.lastName}
             </label>

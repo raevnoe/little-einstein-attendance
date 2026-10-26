@@ -38,7 +38,7 @@ function HowItWorks() {
           </span>
           <div>
             <p className="text-sm font-semibold text-brand-900">{step.title}</p>
-            <p className="text-xs text-brand-600">{step.text}</p>
+            <p className="text-xs text-brand-600 dark:text-brand-300">{step.text}</p>
           </div>
         </li>
       ))}
@@ -75,7 +75,7 @@ function ChildDismissal({ child, fetchers, dismissal, timeZone, onChanged }) {
   const selectId = `fetcher-for-${child.studentId}`;
   const awaiting = dismissal?.status === DISMISSAL_STATUS.AWAITING_VERIFICATION;
   return (
-    <li className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-100 sm:p-5">
+    <li className="rounded-2xl bg-paper p-4 shadow-sm ring-1 ring-brand-100 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <InitialsAvatar text={childInitials(child)} tone="leaf" className="h-11 w-11 text-sm" />
@@ -174,15 +174,15 @@ function FetcherRow({ fetcher, options, onChanged }) {
   }
 
   return (
-    <li className={`rounded-2xl p-4 ring-1 ${fetcher.active ? 'bg-white shadow-sm ring-brand-100' : 'bg-canvas ring-brand-100'}`}>
+    <li className={`rounded-2xl p-4 ring-1 ${fetcher.active ? 'bg-paper shadow-sm ring-brand-100' : 'bg-canvas ring-brand-100'}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span aria-hidden="true" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${fetcher.active ? 'bg-grape-50 text-grape-700' : 'bg-white text-brand-500'}`}>
+          <span aria-hidden="true" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${fetcher.active ? 'bg-grape-50 text-grape-700' : 'bg-paper text-brand-500'}`}>
             <FetcherIcon className="h-5 w-5" />
           </span>
           <div className="min-w-0">
             <p className="font-semibold text-brand-900">{fetcher.fullName}</p>
-            <p className="text-sm text-brand-600">{fetcher.relationship}</p>
+            <p className="text-sm text-brand-600 dark:text-brand-300">{fetcher.relationship}</p>
           </div>
         </div>
         {!fetcher.active && <Badge tone="neutral">Deactivated</Badge>}

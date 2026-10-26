@@ -68,7 +68,7 @@ function DailyTotals({ report }) {
       {/* Phones: one card per day. Tablets, desktops and print: a table. */}
       <ul className="mt-4 space-y-2 sm:hidden print:hidden">
         {report.days.map((d) => (
-          <li key={d.schoolDate} className={`rounded-2xl p-3 ring-1 ring-brand-100 ${d.attendanceRecorded ? 'bg-white' : 'bg-canvas'}`}>
+          <li key={d.schoolDate} className={`rounded-2xl p-3 ring-1 ring-brand-100 ${d.attendanceRecorded ? 'bg-paper' : 'bg-canvas'}`}>
             <p className="font-semibold text-brand-900">{formatDayDate(d.schoolDate)}</p>
             {d.attendanceRecorded ? (
               <dl className="mt-1 grid grid-cols-2 gap-x-3 text-sm text-brand-700">
@@ -78,7 +78,7 @@ function DailyTotals({ report }) {
                 <dt>No time in</dt><dd className="text-right font-semibold text-brand-900">{d.noTimeIn}</dd>
               </dl>
             ) : (
-              <p className="mt-1 text-sm text-brand-600">{NOT_RECORDED}</p>
+              <p className="mt-1 text-sm text-brand-600 dark:text-brand-300">{NOT_RECORDED}</p>
             )}
           </li>
         ))}
@@ -120,7 +120,7 @@ function DailyTotals({ report }) {
 }
 
 function StudentRecords({ records, timeZone }) {
-  if (records.length === 0) return <p className="text-sm text-brand-600">No time in recorded in this period.</p>;
+  if (records.length === 0) return <p className="text-sm text-brand-600 dark:text-brand-300">No time in recorded in this period.</p>;
   return (
     <ul className="space-y-1.5 rounded-xl bg-canvas p-3 text-sm print:bg-transparent print:p-0">
       {records.map((r) => (
@@ -159,8 +159,8 @@ function StudentTotals({ report, showDays, onToggleDays }) {
                 <p className="flex flex-wrap items-center gap-x-2 font-semibold text-brand-900">
                   <InitialsAvatar text={`${s.firstName?.[0] ?? ''}${s.lastName?.[0] ?? ''}`.toUpperCase()} tone="grape" className="h-8 w-8 text-xs print:hidden" />
                   {sortName(s)}
-                  <span className="ml-2 font-mono text-xs font-normal text-brand-600">{s.studentId}</span>
-                  <span className="ml-2 text-xs font-normal text-brand-600">{s.section}</span>
+                  <span className="ml-2 font-mono text-xs font-normal text-brand-600 dark:text-brand-300">{s.studentId}</span>
+                  <span className="ml-2 text-xs font-normal text-brand-600 dark:text-brand-300">{s.section}</span>
                   {!s.active && <span className="ml-2 text-xs font-normal text-brand-500">(inactive)</span>}
                 </p>
                 <p className="flex flex-wrap gap-x-4 text-sm text-brand-700">

@@ -11,6 +11,7 @@ import performanceRoutes from './performance.routes.js';
 import dismissalRoutes from './dismissals.routes.js';
 import reportRoutes from './reports.routes.js';
 import notificationRoutes from './notifications.routes.js';
+import accountRoutes from './account.routes.js';
 import devRoutes from './dev.routes.js';
 import { env } from '../config/env.js';
 
@@ -29,6 +30,7 @@ router.use('/performance', performanceRoutes);
 router.use('/dismissals', dismissalRoutes);
 router.use('/reports', reportRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/account', accountRoutes);
 
 // Development-only helpers (mock SMS). Never mounted in production; see dev.routes.js.
 if (!env.isProduction && env.sms.provider === 'mock') {

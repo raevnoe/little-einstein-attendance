@@ -12,11 +12,13 @@ import ChildPerformance from '../../components/performance/ChildPerformance.jsx'
 import ParentDismissal from '../../components/dismissal/ParentDismissal.jsx';
 import { SchoolLogo } from '../../components/landing/SchoolMark.jsx';
 import { EmptyState, HeroBanner, LoadingState, Sparkle } from '../../components/ui/index.js';
-import { DismissalIcon, RecordsIcon, StudentsIcon } from '../../components/ui/icons.jsx';
+import { DismissalIcon, RecordsIcon, SettingsIcon, StudentsIcon } from '../../components/ui/icons.jsx';
+import SettingsPage from '../SettingsPage.jsx';
 
 const NAV = [
   { key: 'records', label: 'Daily Records', icon: RecordsIcon },
   { key: 'dismissal', label: 'Fetchers & Dismissal', icon: DismissalIcon },
+  { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 function initials(child) {
@@ -37,7 +39,7 @@ function ChildSelector({ options, selectedId, onSelect }) {
             onClick={() => onSelect(child.studentId)}
             className={`inline-flex min-h-12 items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 text-left text-sm font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-400 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-600 ${
               selected
-                ? 'bg-white text-brand-700 shadow-sm'
+                ? 'bg-paper text-brand-700 shadow-sm'
                 : 'bg-white/10 text-white ring-1 ring-inset ring-white/40 hover:bg-white/20'
             }`}
           >
@@ -167,6 +169,14 @@ export default function ParentDashboard({ section, onSectionChange }) {
   const selected = children.find((c) => c.studentId === selectedId) ?? children[0];
   const firstName = account.profile.displayName?.split(' ')[0];
 
+  if (section === 'settings') {
+    return (
+      <AppShell nav={NAV} activeKey={section} onNavigate={navigate} title="Settings">
+        <SettingsPage />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell nav={NAV} activeKey={section} onNavigate={navigate}>
       <HeroBanner
@@ -187,7 +197,7 @@ export default function ParentDashboard({ section, onSectionChange }) {
 
       <div className="mt-6">
         {loading && (
-          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-brand-100">
+          <div className="rounded-3xl bg-paper p-6 shadow-sm ring-1 ring-brand-100">
             <LoadingState>Loading your child’s records…</LoadingState>
           </div>
         )}

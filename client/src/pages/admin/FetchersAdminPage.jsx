@@ -26,7 +26,7 @@ function FetcherRow({ fetcher, onChanged }) {
   }
 
   return (
-    <li className="flex flex-col rounded-2xl border border-brand-100 bg-white p-4 shadow-sm sm:p-5">
+    <li className="flex flex-col rounded-2xl border border-brand-100 bg-paper p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-grape-50 text-grape-700">

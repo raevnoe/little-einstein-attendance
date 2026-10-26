@@ -98,11 +98,11 @@ function EvaluationDays({ days, showAverage }) {
           </div>
           <ul className="mt-2 space-y-2">
             {d.evaluations.map((e) => (
-              <li key={e.area} className="rounded-xl bg-white p-2.5 text-sm ring-1 ring-brand-100 print:p-0 print:ring-0">
+              <li key={e.area} className="rounded-xl bg-paper p-2.5 text-sm ring-1 ring-brand-100 print:p-0 print:ring-0">
                 <p className="flex flex-wrap items-center gap-x-2">
                   <span className="font-medium text-brand-900">{performanceAreaLabel(e.area)}</span>
                   <StarDisplay value={e.starRating} size="text-lg" showLabel />
-                  {e.teacherName && <span className="text-xs text-brand-600">· {e.teacherName}</span>}
+                  {e.teacherName && <span className="text-xs text-brand-600 dark:text-brand-300">· {e.teacherName}</span>}
                 </p>
                 {e.observation && <p className="mt-1.5 whitespace-pre-line border-l-4 border-sky-300 pl-3 text-brand-700">{e.observation}</p>}
               </li>
@@ -122,8 +122,8 @@ function StudentSection({ entry, showAverage, showObservations }) {
         <h3 className="flex flex-wrap items-center gap-x-2 text-lg font-semibold text-brand-900">
           <InitialsAvatar text={`${s.firstName?.[0] ?? ''}${s.lastName?.[0] ?? ''}`.toUpperCase()} tone="sun" className="h-10 w-10 text-sm print:hidden" />
           {sortName(s)}
-          <span className="ml-2 font-mono text-xs font-normal text-brand-600">{s.studentId}</span>
-          <span className="ml-2 text-xs font-normal text-brand-600">{s.section}</span>
+          <span className="ml-2 font-mono text-xs font-normal text-brand-600 dark:text-brand-300">{s.studentId}</span>
+          <span className="ml-2 text-xs font-normal text-brand-600 dark:text-brand-300">{s.section}</span>
           {!s.active && <span className="ml-2 text-xs font-normal text-brand-500">(inactive)</span>}
         </h3>
         <p className="text-sm text-brand-700">

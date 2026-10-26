@@ -116,7 +116,7 @@ export default function AttendancePage() {
           </p>
           <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {SUMMARY_TILES.map((tile) => (
-              <div key={tile.key} className={`rounded-2xl border bg-white p-4 shadow-sm ${tile.border}`}>
+              <div key={tile.key} className={`rounded-2xl border bg-paper p-4 shadow-sm ${tile.border}`}>
                 <dt className="flex items-center gap-2 text-sm font-semibold text-brand-700">
                   <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${tile.dot}`} />
                   {tile.label}

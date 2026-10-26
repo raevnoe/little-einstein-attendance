@@ -43,6 +43,8 @@ const DETAIL_FIELDS = {
   'user.reactivated': ['step'],
   'user.mobile-number-changed': ['hasNumber'],
   'user.sections-changed': ['sections', 'count'],
+  'user.sms-preference-changed': ['attendanceSms'],
+  'user.signed-out-everywhere': [],
   'student.created': ['section', 'parentCount'],
   'student.updated': ['changedFields', 'parentsLinked', 'parentsUnlinked'],
   'student.deactivated': [],
@@ -69,6 +71,7 @@ const DETAIL_FIELDS = {
   'dismissal.released': DISMISSAL,
   'dismissal.release-failed': DISMISSAL,
   'sms.attendance-notification': ['event', 'studentId', 'status', 'sent', 'failed', 'skipped', 'errorCodes'],
+  'settings.changed': ['group', 'changes'],
 };
 
 const MAX_TEXT = 100;

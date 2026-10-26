@@ -16,7 +16,7 @@ const HISTORY_STEP = 5;
 const STATUS_TONE = {
   [ATTENDANCE_STATUS.CHECKED_IN]: { banner: 'bg-leaf-50 ring-leaf-100', icon: 'bg-leaf-400 text-white' },
   [ATTENDANCE_STATUS.CHECKED_OUT]: { banner: 'bg-grape-50 ring-grape-100', icon: 'bg-grape-500 text-white' },
-  [ATTENDANCE_STATUS.ABSENT]: { banner: 'bg-canvas ring-brand-100', icon: 'bg-white text-brand-500 ring-1 ring-inset ring-brand-200' },
+  [ATTENDANCE_STATUS.ABSENT]: { banner: 'bg-canvas ring-brand-100', icon: 'bg-paper text-brand-500 ring-1 ring-inset ring-brand-200' },
 };
 
 const STATUS_PATHS = {
@@ -67,7 +67,7 @@ const MOMENTS = {
 function MomentCard({ moment, time }) {
   const m = MOMENTS[moment];
   return (
-    <div className={`rounded-2xl border-t-4 bg-white p-4 shadow-sm ring-1 ring-brand-100 sm:p-5 ${m.card}`}>
+    <div className={`rounded-2xl border-t-4 bg-paper p-4 shadow-sm ring-1 ring-brand-100 sm:p-5 ${m.card}`}>
       <div className="flex items-center gap-3">
         <span aria-hidden="true" className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${m.icon}`}>
           <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
@@ -96,7 +96,7 @@ export function TodayAttendance({ child, attendance }) {
   const headingId = `today-${child.studentId}`;
 
   return (
-    <section aria-labelledby={headingId} className="relative isolate overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-brand-100">
+    <section aria-labelledby={headingId} className="relative isolate overflow-hidden rounded-[1.75rem] bg-paper shadow-sm ring-1 ring-brand-100">
       <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-14 -z-10 h-40 w-40 rounded-full bg-sun-100" />
       <Sparkle className="pointer-events-none absolute right-6 top-6 h-5 w-5 text-sun-400" />
 
@@ -154,11 +154,11 @@ export function TodayAttendance({ child, attendance }) {
           </svg>
         </summary>
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 px-5 pb-4 text-sm sm:px-7">
-          <dt className="text-brand-600">Student ID</dt>
+          <dt className="text-brand-600 dark:text-brand-300">Student ID</dt>
           <dd className="font-mono text-brand-900">{child.studentId}</dd>
-          <dt className="text-brand-600">Section</dt>
+          <dt className="text-brand-600 dark:text-brand-300">Section</dt>
           <dd className="text-brand-900">{child.section || '—'}</dd>
-          <dt className="text-brand-600">Birthday</dt>
+          <dt className="text-brand-600 dark:text-brand-300">Birthday</dt>
           <dd className="text-brand-900">{formatDate(child.dateOfBirth)}</dd>
         </dl>
       </details>
@@ -190,7 +190,7 @@ export function AttendanceHistory({ studentId, attendance }) {
             <li key={r.schoolDate} className="relative">
               <span
                 aria-hidden="true"
-                className={`absolute -left-[33px] top-1 h-4 w-4 rounded-full ring-4 ring-white ${r.timeOut ? 'bg-grape-500' : r.timeIn ? 'bg-leaf-400' : 'bg-brand-200'}`}
+                className={`absolute -left-[33px] top-1 h-4 w-4 rounded-full ring-4 ring-paper ${r.timeOut ? 'bg-grape-500' : r.timeIn ? 'bg-leaf-400' : 'bg-brand-200'}`}
               />
               <p className="flex flex-wrap items-center gap-2 font-semibold text-brand-900">
                 {formatDayDate(r.schoolDate)}

@@ -20,7 +20,7 @@ function filterSummary(filters) {
 export default function ReportHeader({ title, report, range, children }) {
   const printedAt = new Date().toLocaleString('en-PH', { timeZone: report.timeZone, dateStyle: 'long', timeStyle: 'short' });
   return (
-    <div className="relative overflow-hidden rounded-[1.75rem] bg-white p-5 shadow-sm ring-1 ring-brand-100 sm:p-6 print:overflow-visible print:rounded-none print:border-b-2 print:border-brand-600 print:p-0 print:pb-3 print:shadow-none print:ring-0">
+    <div className="relative overflow-hidden rounded-[1.75rem] bg-paper p-5 shadow-sm ring-1 ring-brand-100 sm:p-6 print:overflow-visible print:rounded-none print:border-b-2 print:border-brand-600 print:p-0 print:pb-3 print:shadow-none print:ring-0">
       <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-sky-50 print:hidden" />
       <Sparkle className="pointer-events-none absolute right-6 top-5 h-5 w-5 text-sun-400 print:hidden" />
       <div className="relative flex flex-wrap items-end justify-between gap-4">
@@ -35,7 +35,7 @@ export default function ReportHeader({ title, report, range, children }) {
             <p className="mt-2 text-sm text-brand-700 print:mt-0.5">
               <strong>{range}</strong> · {filterSummary(report.filters)}
             </p>
-            <p className="mt-0.5 text-xs text-brand-600">
+            <p className="mt-0.5 text-xs text-brand-600 dark:text-brand-300">
               Dates and times are school time ({report.timeZone}).
               <span className="hidden print:inline"> Printed {printedAt}.</span>
             </p>
@@ -67,7 +67,7 @@ export function ReportStatus({ loading, invalid, hasData }) {
   }
   if (loading && !hasData) {
     return (
-      <div className="flex justify-center rounded-2xl bg-white px-4 py-8 ring-1 ring-brand-100">
+      <div className="flex justify-center rounded-2xl bg-paper px-4 py-8 ring-1 ring-brand-100">
         <LoadingState>Loading report…</LoadingState>
       </div>
     );

@@ -212,11 +212,12 @@ async function logged(scan, source, ctx) {
 
 /** Best-effort audit of an arrival/departure SMS: counts and status only (no numbers or text). */
 async function recordSmsOutcome(sms, studentId, attendanceId) {
-  if (!sms || sms.status === 'already-notified') return;
+  // 'off': attendance SMS are turned off in School Settings (that change is audited itself).
+  if (!sms || sms.status === 'already-notified' || sms.status === 'off') return;
   await recordAudit({
     actor: SYSTEM_ACTOR,
     eventType: 'sms.attendance-notification',
-    outcome: sms.status === 'sent' || sms.status === 'skipped' ? 'success' : 'failure',
+    outcome: ['sent', 'skipped', 'opted-out'].includes(sms.status) ? 'success' : 'failure',
     target: { type: 'attendance', id: attendanceId },
     reason: `sms/${sms.status}`,
     details: {

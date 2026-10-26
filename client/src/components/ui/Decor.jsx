@@ -8,7 +8,7 @@ const ACCENT_TEXT = {
   leaf: 'text-leaf-400',
   sky: 'text-sky-500',
   grape: 'text-grape-500',
-  brand: 'text-brand-600',
+  brand: 'text-brand-600 dark:text-brand-300',
 };
 
 /** Four-point sparkle. Colour comes from `currentColor` (pass a text-* class). */
@@ -105,7 +105,7 @@ export function HeroBanner({ eyebrow, title, titleId, as: Heading = 'h1', descri
       <HeroShapes />
       <div className="relative grid gap-6 px-6 py-7 sm:px-9 sm:py-9 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
-          {eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-100">{eyebrow}</p>}
+          {eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-100 dark:text-sky-300">{eyebrow}</p>}
           <Heading id={titleId} className="mt-2 font-script text-[2.75rem] leading-[0.95] text-white sm:text-[3.5rem]">
             {title}
           </Heading>

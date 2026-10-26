@@ -7,7 +7,7 @@
 //   /login                              sign-in form
 //   /admin-dashboard[/<section>]        admin
 //   /teacher-dashboard[/<section>]      teacher
-//   /parent-dashboard[/fetchers]        parent
+//   /parent-dashboard[/fetchers|/settings]  parent
 // Pure functions (no browser objects), so they can be tested with Node.
 import { ROLES } from '@led/shared';
 
@@ -29,11 +29,12 @@ const STAFF_SECTIONS = {
   reports: 'reports',
   students: 'students',
   rfid: 'rfid-cards',
+  settings: 'settings',
 };
 const SECTIONS = Object.freeze({
   [ROLES.ADMIN]: { ...STAFF_SECTIONS, fetchers: 'fetchers', accounts: 'accounts', audit: 'audit-log' },
   [ROLES.TEACHER]: STAFF_SECTIONS,
-  [ROLES.PARENT]: { records: '', dismissal: 'fetchers' },
+  [ROLES.PARENT]: { records: '', dismissal: 'fetchers', settings: 'settings' },
 });
 
 /** The home section key of a role's dashboard ('dashboard' for staff, 'records' for parents). */

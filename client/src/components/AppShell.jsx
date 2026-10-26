@@ -5,6 +5,7 @@ import { useNotifications } from '../lib/useNotifications.js';
 import NotificationBell from './NotificationBell.jsx';
 import SignOutButton from './SignOutButton.jsx';
 import SoundToggle from './SoundToggle.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
 import SchoolMark from './landing/SchoolMark.jsx';
 import BrandStripe from './ui/BrandStripe.jsx';
 import { Squiggle } from './ui/Decor.jsx';
@@ -54,7 +55,7 @@ function SidebarNav({ nav, activeKey, onNavigate }) {
                 }`}
               >
                 {active && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-full bg-brand-600" />}
-                {Icon && <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-brand-600' : 'text-brand-500'}`} />}
+                {Icon && <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-brand-600 dark:text-brand-300' : 'text-brand-500'}`} />}
                 {item.label}
               </button>
             </li>
@@ -80,7 +81,7 @@ function PillNav({ nav, activeKey, onNavigate, className = '' }) {
                 onClick={() => onNavigate(item.key)}
                 aria-current={active ? 'page' : undefined}
                 className={`inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-semibold motion-safe:transition-colors ${FOCUS_RING} ${
-                  active ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-brand-700 ring-1 ring-brand-100 hover:bg-brand-50'
+                  active ? 'bg-brand-600 text-white shadow-sm' : 'bg-paper text-brand-700 ring-1 ring-brand-100 hover:bg-brand-50'
                 }`}
               >
                 {Icon && <Icon className="h-4.5 w-4.5 shrink-0" />}
@@ -151,12 +152,12 @@ function BottomNav({ nav, activeKey, onNavigate }) {
     <nav
       ref={containerRef}
       aria-label="Sections"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(46,49,146,0.06)] sm:hidden print:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-100 bg-paper pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(46,49,146,0.06)] sm:hidden print:hidden"
     >
       {more.length > 0 && moreOpen && (
         <ul
           id="bottom-nav-more"
-          className="absolute bottom-full right-2 mb-2 w-56 rounded-2xl bg-white p-1.5 shadow-lg ring-1 ring-brand-100"
+          className="absolute bottom-full right-2 mb-2 w-56 rounded-2xl bg-paper p-1.5 shadow-lg ring-1 ring-brand-100"
         >
           {more.map((item) => {
             const active = item.key === activeKey;
@@ -171,7 +172,7 @@ function BottomNav({ nav, activeKey, onNavigate }) {
                     active ? 'bg-brand-50 font-semibold text-brand-700' : 'text-brand-700/80 hover:bg-canvas hover:text-brand-900'
                   }`}
                 >
-                  {Icon && <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-brand-600' : 'text-brand-500'}`} />}
+                  {Icon && <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-brand-600 dark:text-brand-300' : 'text-brand-500'}`} />}
                   {item.label}
                 </button>
               </li>
@@ -233,9 +234,9 @@ export default function AppShell({ title, nav, activeKey, onNavigate, layout = '
   });
 
   return (
-    <div className={`min-h-screen bg-white text-brand-900 ${sidebar ? 'lg:flex' : ''}`}>
+    <div className={`min-h-screen bg-paper text-brand-900 ${sidebar ? 'lg:flex' : ''}`}>
       {sidebar && (
-        <aside className="hidden border-r border-brand-100 bg-white print:hidden lg:sticky lg:top-0 lg:z-40 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col">
+        <aside className="hidden border-r border-brand-100 bg-paper print:hidden lg:sticky lg:top-0 lg:z-40 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col">
           <BrandStripe />
           <div className="flex items-start justify-between gap-2 px-5 pb-4 pt-5">
             <SchoolMark logoClassName="h-12 w-auto" />
@@ -244,7 +245,10 @@ export default function AppShell({ title, nav, activeKey, onNavigate, layout = '
           <SidebarNav nav={nav} activeKey={activeKey} onNavigate={onNavigate} />
           <div className="space-y-3 border-t border-brand-100 p-4">
             <UserSummary account={account} />
-            <SoundToggle className="w-full" />
+            <div className="grid grid-cols-2 gap-2">
+              <SoundToggle className="w-full px-2" />
+              <ThemeToggle className="w-full px-2" />
+            </div>
             <SignOutButton className="w-full" />
           </div>
         </aside>
@@ -253,7 +257,7 @@ export default function AppShell({ title, nav, activeKey, onNavigate, layout = '
       <div className="min-w-0 flex-1">
         {/* relative on phones too: z-30 only applies to a positioned element, and backdrop-blur makes the
             header its own layer, so without it page content (e.g. the hero banner) covers the bell panel. */}
-        <header className={`relative z-30 border-b border-brand-100 bg-white/95 backdrop-blur sm:sticky sm:top-0 print:hidden ${sidebar ? 'lg:hidden' : ''}`}>
+        <header className={`relative z-30 border-b border-brand-100 bg-paper/95 backdrop-blur sm:sticky sm:top-0 print:hidden ${sidebar ? 'lg:hidden' : ''}`}>
           <BrandStripe />
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <SchoolMark compact />
@@ -261,7 +265,7 @@ export default function AppShell({ title, nav, activeKey, onNavigate, layout = '
               <UserSummary account={account} className="hidden text-right sm:flex" />
               <NotificationBell feed={notifications} nav={nav} onNavigate={onNavigate} className="shrink-0" />
               {/* Phones: the sound button moves to the line below so the top row fits 360px screens. */}
-              <span className="hidden sm:flex"><SoundToggle compact /></span>
+              <span className="hidden gap-3 sm:flex"><SoundToggle compact /><ThemeToggle compact /></span>
               <SignOutButton className="shrink-0" />
             </div>
           </div>
@@ -273,6 +277,7 @@ export default function AppShell({ title, nav, activeKey, onNavigate, layout = '
             </p>
             <Badge tone="success" className="capitalize">{account.user.role}</Badge>
             <SoundToggle compact className="ml-auto" />
+            <ThemeToggle compact />
           </div>
           {nav && (
             <PillNav

@@ -101,7 +101,7 @@ export default function NotificationBell({ feed, nav = [], onNavigate, placement
         {feed.unread > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold leading-none text-white ring-2 ring-white"
+            className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold leading-none text-white ring-2 ring-paper"
           >
             {badgeText(feed.unread)}
           </span>
@@ -115,7 +115,7 @@ export default function NotificationBell({ feed, nav = [], onNavigate, placement
         <section
           id={panelId}
           aria-label="Notifications"
-          className={`${PANEL_PLACEMENT[placement]} z-50 overflow-hidden rounded-2xl bg-white text-left shadow-lg ring-1 ring-brand-100`}
+          className={`${PANEL_PLACEMENT[placement]} z-50 overflow-hidden rounded-2xl bg-paper text-left shadow-lg ring-1 ring-brand-100`}
         >
           <h2 className="border-b border-brand-100 px-4 py-3 text-base font-semibold text-brand-900">Notifications</h2>
           <div className="max-h-[min(70vh,28rem)] overflow-y-auto">
@@ -142,7 +142,7 @@ export default function NotificationBell({ feed, nav = [], onNavigate, placement
                       <span
                         aria-hidden="true"
                         className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                          warning ? 'bg-amber-50 text-amber-700' : 'bg-brand-50 text-brand-600'
+                          warning ? 'bg-amber-50 text-amber-700' : 'bg-brand-50 text-brand-600 dark:text-brand-300'
                         }`}
                       >
                         <Icon className="h-5 w-5" />

@@ -50,7 +50,7 @@ export default function ReportFilters({ filters, onChange, today, sections = [],
               aria-pressed={Boolean(active)}
               onClick={() => onChange({ ...filters, ...range })}
               className={`min-h-11 rounded-full px-4 text-sm font-semibold motion-safe:transition-colors disabled:opacity-50 ${FOCUS_RING} ${
-                active ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-brand-700 ring-1 ring-brand-200 hover:bg-sun-50 hover:ring-brand-300'
+                active ? 'bg-brand-600 text-white shadow-sm' : 'bg-paper text-brand-700 ring-1 ring-brand-200 hover:bg-sun-50 hover:ring-brand-300'
               }`}
             >
               {p.label}

@@ -9,6 +9,7 @@ import { adminDeactivateFetcher, listAllFetchers, parseFetcherId } from '../serv
 import { getAdminOverview } from '../services/report.service.js';
 import { auditContext } from '../services/audit.service.js';
 import { listAuditLogs } from '../services/auditQuery.service.js';
+import { getSchoolSettings, updateSchoolSettings } from '../services/settings.service.js';
 import { HttpError } from '../utils/httpError.js';
 
 function targetUid(req) {
@@ -37,6 +38,17 @@ router.get('/overview', async (req, res) => {
 // Read-only. There is deliberately no route that updates or deletes audit entries.
 router.get('/audit-logs', async (req, res) => {
   res.json(await listAuditLogs(req.query));
+});
+
+// GET /api/admin/settings - School Settings: { settings: { attendance, dismissal, sms } }.
+router.get('/settings', async (req, res) => {
+  res.json(await getSchoolSettings());
+});
+
+// PATCH /api/admin/settings { attendance?: {...}, dismissal?: {...}, sms?: {...} } - only the listed
+// fields (shared SCHOOL_SETTINGS), each validated; every changed group is audited.
+router.patch('/settings', async (req, res) => {
+  res.json(await updateSchoolSettings(auditContext(req), req.body));
 });
 
 // GET /api/admin/parents - parent accounts, for linking parents to students.

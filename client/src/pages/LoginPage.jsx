@@ -7,6 +7,7 @@ import Field from '../components/ui/Field.jsx';
 import { buttonClass, FOCUS_RING, inputClass } from '../components/ui/classes.js';
 import { AlertIcon, ArrowLeftIcon, EyeIcon, EyeOffIcon } from '../components/ui/icons.jsx';
 import { playSound } from '../lib/sounds.js';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 export default function LoginPage({ onBack }) {
   const { login, sessionMessage } = useAuth();
@@ -34,7 +35,7 @@ export default function LoginPage({ onBack }) {
   const message = error ?? sessionMessage;
 
   return (
-    <main className="flex min-h-screen flex-col bg-white">
+    <main className="flex min-h-screen flex-col bg-paper">
       <BrandStripe />
       <div className="flex flex-1 lg:grid lg:grid-cols-2">
         {/* Brand panel: desktop only (phones and tablets see the logo above the form). */}
@@ -55,14 +56,17 @@ export default function LoginPage({ onBack }) {
 
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
           <div className="w-full max-w-sm">
-            {onBack && (
-              <button type="button" onClick={onBack} className={`mb-4 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 ${FOCUS_RING}`}>
-                <ArrowLeftIcon className="h-4 w-4" />
-                Back to home
-              </button>
-            )}
+            <div className="mb-4 flex items-center justify-between gap-2">
+              {onBack ? (
+                <button type="button" onClick={onBack} className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-brand-700 hover:bg-brand-50 ${FOCUS_RING}`}>
+                  <ArrowLeftIcon className="h-4 w-4" />
+                  Back to home
+                </button>
+              ) : <span />}
+              <ThemeToggle compact />
+            </div>
 
-            <div className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm sm:p-8">
+            <div className="rounded-2xl border border-brand-100 bg-paper p-6 shadow-sm sm:p-8">
               <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
                 <SchoolLogo className="h-24 w-auto lg:hidden" />
                 <h1 className="mt-4 font-script text-[2.5rem] leading-none text-brand-700 lg:mt-0">Sign in to continue</h1>

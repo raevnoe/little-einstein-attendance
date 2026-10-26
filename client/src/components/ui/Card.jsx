@@ -19,7 +19,7 @@ export function CardHeader({ title, titleId, subtitle, actions, icon, script = f
     <div className={`flex flex-wrap items-start justify-between gap-3 ${className}`}>
       <div className="flex min-w-0 items-start gap-3">
         {icon && (
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600" aria-hidden="true">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:text-brand-300" aria-hidden="true">
             {icon}
           </span>
         )}

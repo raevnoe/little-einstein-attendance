@@ -100,7 +100,7 @@ export default function ReaderScanPanel({ onScanned, timeZone }) {
 
   return (
     <section
-      className={`rounded-2xl border-2 bg-white p-5 shadow-sm sm:p-6 ${ready ? 'border-leaf-300' : 'border-amber-300'}`}
+      className={`rounded-2xl border-2 bg-paper p-5 shadow-sm sm:p-6 ${ready ? 'border-leaf-300' : 'border-amber-300'}`}
       aria-labelledby="reader-heading"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">

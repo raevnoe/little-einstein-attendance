@@ -12,7 +12,7 @@ import { FOCUS_RING, buttonClass, inputClass } from '../ui/classes.js';
 function PhraseChip({ phrase, tone, pressed, disabled, onToggle }) {
   const colors = pressed
     ? tone === 'positive' ? 'bg-leaf-50 text-leaf-700 ring-leaf-400' : 'bg-sun-50 text-brand-900 ring-sun-400'
-    : 'bg-white text-brand-700 ring-brand-200 hover:bg-canvas';
+    : 'bg-paper text-brand-700 ring-brand-200 hover:bg-canvas';
   return (
     <button
       type="button"
@@ -79,7 +79,7 @@ export default function AreaEvaluationRow({ area, evaluation, studentId, date, t
   ];
 
   return (
-    <li className="rounded-2xl border border-brand-100 bg-white p-4 sm:p-5">
+    <li className="rounded-2xl border border-brand-100 bg-paper p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h3 className="text-base font-semibold text-brand-900">{area.label}</h3>
         {changed ? (

@@ -7,6 +7,7 @@ import BrandStripe from '../components/ui/BrandStripe.jsx';
 import { buttonClass, FOCUS_RING } from '../components/ui/classes.js';
 import { AttendanceIcon, CheckCircleIcon, CloseIcon, DismissalIcon, DownloadIcon, InfoIcon, MenuIcon, PhoneIcon, StarIcon } from '../components/ui/icons.jsx';
 import { useInstallPrompt } from '../lib/useInstallPrompt.js';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 const NAV_LINKS = [
   { href: '#home', label: 'Home' },
@@ -66,7 +67,7 @@ function Header({ onLogin }) {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-brand-100 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-brand-100 bg-paper/95 backdrop-blur">
       <BrandStripe />
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <a href="#home" className={`rounded-xl ${FOCUS_RING}`} aria-label="Little Einstein Discovery School, home">
@@ -84,6 +85,7 @@ function Header({ onLogin }) {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle compact />
           <button type="button" onClick={onLogin} className={buttonClass()}>
             Login
           </button>
@@ -101,7 +103,7 @@ function Header({ onLogin }) {
       </div>
 
       {menuOpen && (
-        <nav id="mobile-menu" aria-label="Main" className="border-t border-brand-100 bg-white md:hidden">
+        <nav id="mobile-menu" aria-label="Main" className="border-t border-brand-100 bg-paper md:hidden">
           <ul className="mx-auto max-w-7xl space-y-1 px-4 py-3">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
@@ -139,7 +141,7 @@ function HeroPhoto() {
         fetchPriority="high"
         className="relative aspect-square w-full rounded-[2rem] object-cover shadow-lg ring-8 ring-white"
       />
-      <div aria-hidden="true" className="absolute -bottom-5 right-4 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-lg ring-1 ring-brand-100 sm:right-8">
+      <div aria-hidden="true" className="absolute -bottom-5 right-4 flex items-center gap-3 rounded-2xl bg-paper px-4 py-3 shadow-lg ring-1 ring-brand-100 sm:right-8">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-leaf-50 text-leaf-700">
           <CheckCircleIcon className="h-5 w-5" />
         </span>
@@ -160,7 +162,7 @@ function InstallCard() {
 
   return (
     <section aria-labelledby="install-heading" className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-      <div className="flex flex-col items-start gap-5 rounded-3xl border border-brand-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
+      <div className="flex flex-col items-start gap-5 rounded-3xl border border-brand-100 bg-paper p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
         <div className="flex items-center gap-4">
           <SchoolLogo decorative className="h-14 w-auto" />
           <div>
@@ -185,10 +187,10 @@ function InstallCard() {
  */
 export default function LandingPage({ onLogin }) {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white text-brand-900">
+    <div className="min-h-screen overflow-x-hidden bg-paper text-brand-900">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-900 focus:shadow"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-paper focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand-900 focus:shadow"
       >
         Skip to content
       </a>
@@ -206,7 +208,7 @@ export default function LandingPage({ onLogin }) {
           </div>
           <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 pb-16 pt-10 sm:px-6 md:grid-cols-2 md:gap-8 md:pt-16 lg:gap-16 lg:px-8 lg:pb-24">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm font-semibold text-leaf-700 ring-1 ring-leaf-100">
+              <p className="inline-flex items-center gap-2 rounded-full bg-paper px-3 py-1 text-sm font-semibold text-leaf-700 ring-1 ring-leaf-100">
                 <span className="h-2 w-2 rounded-full bg-leaf-400" aria-hidden="true" />
                 For parents, teachers &amp; school staff
               </p>
@@ -241,7 +243,7 @@ export default function LandingPage({ onLogin }) {
             </h2>
             <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
               {FEATURES.map(({ title, text, icon: Icon, tile }) => (
-                <li key={title} className="rounded-2xl border border-brand-100 bg-white p-6 shadow-sm">
+                <li key={title} className="rounded-2xl border border-brand-100 bg-paper p-6 shadow-sm">
                   <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${tile}`} aria-hidden="true">
                     <Icon className="h-6 w-6" />
                   </span>
@@ -287,7 +289,7 @@ export default function LandingPage({ onLogin }) {
 
         {/* About / trust */}
         <section id="about" aria-labelledby="about-heading" className={`${SECTION} px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24`}>
-          <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl border border-brand-100 bg-white shadow-sm">
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl border border-brand-100 bg-paper shadow-sm">
             <BrandStripe className="h-1.5" />
             <div className="grid md:grid-cols-[2fr_3fr]">
               <img

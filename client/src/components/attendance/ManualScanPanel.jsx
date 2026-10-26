@@ -33,7 +33,7 @@ export default function ManualScanPanel({ onScanned }) {
   }
 
   return (
-    <section aria-labelledby="manual-uid-heading" className="rounded-2xl border border-dashed border-brand-200 bg-white">
+    <section aria-labelledby="manual-uid-heading" className="rounded-2xl border border-dashed border-brand-200 bg-paper">
       <h2 id="manual-uid-heading">
         <button
           type="button"

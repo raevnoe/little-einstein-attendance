@@ -119,6 +119,30 @@ function updateProfileWithAudit(targetUid, fields, event) {
   });
 }
 
+// ---- the signed-in user's own account (Settings -> My Account). `uid` always comes from the
+// verified token, never from the request.
+
+/** A PARENT turns their own arrival/departure SMS on or off (users/{uid}.attendanceSms). */
+export async function setOwnAttendanceSms(ctx, uid, value) {
+  if (typeof value !== 'boolean') {
+    throw new HttpError(400, 'validation/invalid-preference', 'attendanceSms must be true or false.');
+  }
+  await updateProfileWithAudit(uid, { attendanceSms: value }, {
+    ...ctx, eventType: 'user.sms-preference-changed', details: { attendanceSms: value },
+  });
+  return toPublicUser(await findUserById(uid));
+}
+
+/**
+ * Ends every session of the caller, including this one: Firebase revokes the refresh tokens and
+ * requireAuth (checkRevoked) refuses ID tokens issued before now. Audited after the Auth step
+ * (it cannot join a transaction); an audit failure does not undo a sign-out.
+ */
+export async function signOutEverywhere(ctx, uid) {
+  await adminAuth.revokeRefreshTokens(uid);
+  await recordAudit({ ...ctx, eventType: 'user.signed-out-everywhere', target: { type: 'user', id: uid } });
+}
+
 /** `ctx` = auditContext(req): the verified admin performing the change. */
 export async function assignRole(ctx, targetUid, role) {
   if (!ALL_ROLES.includes(role)) {
