@@ -111,7 +111,7 @@ export default function ReaderScanPanel({ onScanned, timeZone }) {
           <div className="min-w-0">
             <h2 id="reader-heading" className="text-lg font-semibold text-brand-900">UHF RFID Reader</h2>
             <p className="mt-0.5 text-sm text-brand-500">
-              Keep this page open with the reader connected by USB. Present the RFID card to record time in / time out.
+              Keep this page open with the reader connected by USB. Present the RFID card to record arrival or pick-up.
             </p>
           </div>
         </div>

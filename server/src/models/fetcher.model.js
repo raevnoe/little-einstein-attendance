@@ -14,7 +14,7 @@
 // Invariant (checked by fetcher.service on every write, and again at dismissal time):
 // every studentId is an active student whose parentIds contain parentId.
 // No phone number or other contact data of the Fetcher is collected.
-import { COLLECTIONS, MAX_FETCHER_NAME_LENGTH, MAX_FETCHER_RELATIONSHIP_LENGTH } from '@led/shared';
+import { COLLECTIONS, MAX_FETCHER_NAME_LENGTH, MAX_FETCHER_RELATIONSHIP_LENGTH, validatePersonName } from '@led/shared';
 import { db } from '../config/firebaseAdmin.js';
 import { normalizeStudentId } from './student.model.js';
 
@@ -32,10 +32,9 @@ const cleanText = (value) => (typeof value === 'string' ? value.trim().replace(/
 function validateFullName(value) {
   const name = cleanText(value);
   if (!name) return { error: 'Full name is required.' };
-  if (name.length < 2 || name.length > MAX_FETCHER_NAME_LENGTH) {
-    return { error: `Full name must be 2-${MAX_FETCHER_NAME_LENGTH} characters.` };
-  }
-  if (!NAME_PATTERN.test(name)) return { error: 'Full name may only contain letters, spaces, periods, apostrophes and hyphens.' };
+  if (name.length < 2) return { error: 'Full name must be at least 2 characters.' };
+  const checked = validatePersonName(name, { label: 'Full name', max: MAX_FETCHER_NAME_LENGTH });
+  if (checked.error) return { error: checked.error };
   return { value: name };
 }
 

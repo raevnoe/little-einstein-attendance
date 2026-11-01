@@ -1,12 +1,13 @@
 // Kindergarten sections: the admin-managed list (systemSettings/sections) and the rules that keep
 // students and teachers pointing at names on it. Teacher assignment lives in userAccount.service.
-import { ROLES } from '@led/shared';
+import { ROLES, TIME_OF_DAY_PATTERN, minutesOfTime } from '@led/shared';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { MAX_SECTIONS, readSectionNames, sectionKey, sectionsRef, sortNames, validateSectionName } from '../models/section.model.js';
 import { findAllStudents } from '../models/student.model.js';
 import { findUsersByRole } from '../models/user.model.js';
 import { auditInTransaction } from './audit.service.js';
+import { getAttendanceSettings } from '../models/systemSettings.model.js';
 import { HttpError } from '../utils/httpError.js';
 
 const invalidName = (message) => new HttpError(400, 'validation/invalid-section', message, { fields: { name: message } });
@@ -17,7 +18,7 @@ const NOT_FOUND = () => new HttpError(404, 'sections/not-found', 'This section c
  * sections students still carry that are NOT on the list (older records), so they can be added.
  */
 export async function listSections() {
-  const [{ names, saved }, students, teachers] = await Promise.all([readSectionNames(), findAllStudents(), findUsersByRole(ROLES.TEACHER)]);
+  const [{ names, saved, startTimes, endTimes }, students, teachers] = await Promise.all([readSectionNames(), findAllStudents(), findUsersByRole(ROLES.TEACHER)]);
   const count = (key) => ({
     activeStudents: students.filter((s) => s.active && sectionKey(s.section) === key).length,
     students: students.filter((s) => sectionKey(s.section) === key).length,
@@ -27,7 +28,12 @@ export async function listSections() {
   const unlisted = sortNames([...new Map(students
     .filter((s) => s.section && !listed.has(sectionKey(s.section)))
     .map((s) => [sectionKey(s.section), s.section])).values()]);
-  return { saved, sections: names.map((name) => ({ name, ...count(sectionKey(name)) })), unlisted };
+  // startTime / endTime: the section's own class hours, or null (= the school default in School Settings).
+  return {
+    saved,
+    sections: names.map((name) => ({ name, startTime: startTimes[name] ?? null, endTime: endTimes[name] ?? null, ...count(sectionKey(name)) })),
+    unlisted,
+  };
 }
 
 /** Adds a section name (409 if the same name, ignoring case and spaces, is already listed). */
@@ -35,12 +41,12 @@ export async function addSection(ctx, input) {
   const { value: name, error } = validateSectionName(input?.name);
   if (error) throw invalidName(error);
   await db.runTransaction(async (tx) => {
-    const { names } = await readSectionNames(tx);
+    const { names, startTimes, endTimes } = await readSectionNames(tx);
     if (names.some((n) => sectionKey(n) === sectionKey(name))) {
       throw new HttpError(409, 'sections/duplicate', `The section "${name}" already exists.`);
     }
     if (names.length >= MAX_SECTIONS) throw new HttpError(409, 'sections/too-many', `At most ${MAX_SECTIONS} sections.`);
-    tx.set(sectionsRef(), { names: sortNames([...names, name]), updatedAt: FieldValue.serverTimestamp() });
+    tx.set(sectionsRef(), { names: sortNames([...names, name]), startTimes, endTimes, updatedAt: FieldValue.serverTimestamp() });
     auditInTransaction(tx, { ...ctx, eventType: 'section.added', target: { type: 'section', id: name }, details: { section: name } });
   });
   return listSections();
@@ -60,11 +66,61 @@ export async function removeSection(ctx, rawName) {
       `This section is still used by ${studentCount} student(s) and ${teacherCount} teacher(s). Move them to another section first.`);
   }
   await db.runTransaction(async (tx) => {
-    const { names } = await readSectionNames(tx);
+    const { names, startTimes, endTimes } = await readSectionNames(tx);
     const name = names.find((n) => sectionKey(n) === key);
     if (!name) throw NOT_FOUND();
-    tx.set(sectionsRef(), { names: names.filter((n) => n !== name), updatedAt: FieldValue.serverTimestamp() });
+    tx.set(sectionsRef(), {
+      names: names.filter((n) => n !== name),
+      startTimes: withoutKey(startTimes, name),
+      endTimes: withoutKey(endTimes, name),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
     auditInTransaction(tx, { ...ctx, eventType: 'section.removed', target: { type: 'section', id: name }, details: { section: name } });
+  });
+  return listSections();
+}
+
+const withoutKey = (map, key) => Object.fromEntries(Object.entries(map ?? {}).filter(([k]) => k !== key));
+
+/**
+ * Sets or clears a section's own class hours: body { startTime?, endTime? }, each "HH:MM", or null / ""
+ * to use the school default again; a field left out stays as it is. The hours that apply afterwards
+ * (own or default) must end after they start.
+ */
+export async function setSectionHours(ctx, rawName, body) {
+  const fields = {};
+  for (const key of ['startTime', 'endTime']) {
+    if (!(key in body)) continue;
+    const value = body[key];
+    if (value === null || value === '') fields[key] = null;
+    else if (typeof value === 'string' && TIME_OF_DAY_PATTERN.test(value)) fields[key] = value;
+    else {
+      const message = 'Enter a time such as 08:00, or leave it empty to use the school default.';
+      throw new HttpError(400, 'validation/invalid-class-hours', message, { fields: { [key]: message } });
+    }
+  }
+  const { classStartTime, classEndTime } = await getAttendanceSettings();
+  await db.runTransaction(async (tx) => {
+    const { names, startTimes, endTimes } = await readSectionNames(tx);
+    const name = names.find((n) => sectionKey(n) === sectionKey(rawName));
+    if (!name) throw NOT_FOUND();
+    const start = 'startTime' in fields ? fields.startTime : startTimes[name] ?? null;
+    const end = 'endTime' in fields ? fields.endTime : endTimes[name] ?? null;
+    if (minutesOfTime(end ?? classEndTime) <= minutesOfTime(start ?? classStartTime)) {
+      const message = 'Classes must end after they start.';
+      throw new HttpError(400, 'validation/invalid-class-hours', message, { fields: { endTime: message } });
+    }
+    if ((startTimes[name] ?? null) === start && (endTimes[name] ?? null) === end) return;
+    tx.set(sectionsRef(), {
+      names,
+      startTimes: start ? { ...withoutKey(startTimes, name), [name]: start } : withoutKey(startTimes, name),
+      endTimes: end ? { ...withoutKey(endTimes, name), [name]: end } : withoutKey(endTimes, name),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    auditInTransaction(tx, {
+      ...ctx, eventType: 'section.class-hours-changed', target: { type: 'section', id: name },
+      details: { section: name, startTime: start, endTime: end },
+    });
   });
   return listSections();
 }

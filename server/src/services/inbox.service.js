@@ -107,8 +107,8 @@ export async function notifyAttendanceInApp({ event, student, attendanceId, occu
     await deliverOnce(uids, `${event}_${attendanceId}`, {
       kind: arrival ? KIND.ARRIVAL : KIND.DEPARTURE,
       audience: AUDIENCE.PARENT,
-      title: arrival ? `${student.firstName} arrived at school` : `${student.firstName} left school`,
-      body: `${arrival ? 'Time in' : 'Time out'}: ${formatSchoolTime(occurredAt)}`,
+      title: arrival ? `${student.firstName} arrived at school` : `${student.firstName} was picked up`,
+      body: `${arrival ? 'Arrived' : 'Picked up'}: ${formatSchoolTime(occurredAt)}`,
       link: 'records',
       studentId: student.studentId,
     });
@@ -124,7 +124,7 @@ export async function notifyPerformanceInApp({ student, evaluationDate, area }) 
       return {
         kind: KIND.PERFORMANCE,
         audience: AUDIENCE.PARENT,
-        title: `New Performance Evaluation for ${student.firstName}`,
+        title: `New Behavioral Evaluation for ${student.firstName}`,
         body: `${formatSchoolDateShort(evaluationDate)}: ${areas.map(performanceAreaLabel).join(', ')}`,
         link: 'records',
         studentId: student.studentId,
@@ -169,7 +169,7 @@ export async function notifyDismissalRequestInApp({ record, student, parentUid, 
       kind: KIND.DISMISSAL_REQUEST,
       audience: AUDIENCE.STAFF,
       title: `Dismissal request: ${fullName(student)}`,
-      body: `Fetcher: ${fetcher}. Waiting for code verification.`,
+      body: `Pick-up person: ${fetcher}. Waiting for code verification.`,
       link: 'dismissal',
     });
   });

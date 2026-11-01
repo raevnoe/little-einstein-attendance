@@ -56,7 +56,7 @@ export default function FetcherForm({ fetcher, options, onSaved, onCancel }) {
 
   return (
     <form onSubmit={submit} className="rounded-2xl border-2 border-dashed border-grape-100 bg-grape-50/40 p-4 sm:p-5">
-      <h3 className="font-script text-[1.75rem] leading-none text-grape-700">{fetcher ? `Edit ${fetcher.fullName}` : 'Add a Fetcher'}</h3>
+      <h3 className="font-script text-[1.75rem] leading-none text-grape-700">{fetcher ? `Edit ${fetcher.fullName}` : 'Add a pick-up person'}</h3>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <Field id={`${prefix}-name`} label="Full name" error={fieldErrors.fullName}>
           <input
@@ -95,7 +95,7 @@ export default function FetcherForm({ fetcher, options, onSaved, onCancel }) {
         </div>
       </div>
       <fieldset className="mt-4" aria-describedby={fieldErrors.studentIds ? childrenErrorId : undefined}>
-        <legend className="text-sm font-semibold text-brand-900">May collect</legend>
+        <legend className="text-sm font-semibold text-brand-900">Can pick up</legend>
         <div className="mt-1.5 flex flex-wrap gap-2">
           {options.map((child) => (
             <label key={child.studentId} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-paper px-3 text-sm font-medium text-brand-900 ring-1 ring-brand-200 has-[:checked]:bg-leaf-50 has-[:checked]:ring-leaf-400 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500">
@@ -108,7 +108,7 @@ export default function FetcherForm({ fetcher, options, onSaved, onCancel }) {
       </fieldset>
       {error && !Object.keys(fieldErrors).length && <Alert tone="error" role="alert" className="mt-4">{error}</Alert>}
       <div className="mt-5 flex flex-wrap gap-2">
-        <button type="submit" disabled={busy} className={buttonClass()}>{busy ? 'Saving…' : fetcher ? 'Save changes' : 'Add Fetcher'}</button>
+        <button type="submit" disabled={busy} className={buttonClass()}>{busy ? 'Saving…' : fetcher ? 'Save changes' : 'Add pick-up person'}</button>
         <button type="button" onClick={onCancel} disabled={busy} className={buttonClass({ variant: 'secondary' })}>Cancel</button>
       </div>
     </form>

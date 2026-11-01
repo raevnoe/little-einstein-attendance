@@ -245,10 +245,8 @@ export default function AppShell({ title, nav, activeKey, onNavigate, layout = '
           <SidebarNav nav={nav} activeKey={activeKey} onNavigate={onNavigate} />
           <div className="space-y-3 border-t border-brand-100 p-4">
             <UserSummary account={account} />
-            <div className="grid grid-cols-2 gap-2">
-              <SoundToggle className="w-full px-2" />
-              <ThemeToggle className="w-full px-2" />
-            </div>
+            <SoundToggle className="w-full" />
+            <ThemeToggle className="w-full" />
             <SignOutButton className="w-full" />
           </div>
         </aside>

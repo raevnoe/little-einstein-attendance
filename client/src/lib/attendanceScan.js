@@ -35,7 +35,16 @@ const browserIsOnline = () => globalThis.navigator?.onLine !== false;
 
 /** The student's name and recorded times from the server's scan object (already in the response). */
 function scanDetails(scan) {
-  const attendance = scan?.attendance ? { timeIn: scan.attendance.timeIn ?? null, timeOut: scan.attendance.timeOut ?? null } : null;
+  const attendance = scan?.attendance
+    ? {
+      timeIn: scan.attendance.timeIn ?? null,
+      timeOut: scan.attendance.timeOut ?? null,
+      arrivalStatus: scan.attendance.arrivalStatus ?? null,
+      lateMinutes: scan.attendance.lateMinutes ?? null,
+      departureStatus: scan.attendance.departureStatus ?? null,
+      earlyMinutes: scan.attendance.earlyMinutes ?? null,
+    }
+    : null;
   return { studentName: scan?.student?.name ?? null, attendance };
 }
 

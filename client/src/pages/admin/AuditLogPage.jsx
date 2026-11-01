@@ -24,7 +24,7 @@ const OUTCOME_TONES = {
 const OUTCOME_LABELS = { success: 'Success', failure: 'Failed', denied: 'Denied' };
 const TARGET_LABELS = {
   user: 'User', student: 'Student', rfidCard: 'RFID card', attendance: 'Attendance', performance: 'Evaluation',
-  fetcher: 'Fetcher', dismissal: 'Dismissal', route: 'API',
+  fetcher: 'Pick-up person', dismissal: 'Dismissal', route: 'API',
 };
 
 /** API path for the applied filters (empty ones left out) and an optional page cursor. */

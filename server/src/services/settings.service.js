@@ -1,7 +1,7 @@
 // School Settings (admin only): the values in systemSettings/{attendance,dismissal,sms}.
 // Every change is validated against shared SCHOOL_SETTINGS and saved together with one audit entry
 // per changed group, in one transaction.
-import { SCHOOL_SETTINGS, isValidSettingValue } from '@led/shared';
+import { SCHOOL_SETTINGS, isValidSettingValue, minutesOfTime } from '@led/shared';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { clearSettingsCache, readSchoolSettings, settingsRef } from '../models/systemSettings.model.js';
@@ -11,7 +11,9 @@ import { HttpError } from '../utils/httpError.js';
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 function describe(spec) {
-  return spec.type === 'boolean' ? 'Must be on or off.' : `Enter a whole number from ${spec.min} to ${spec.max}.`;
+  if (spec.type === 'boolean') return 'Must be on or off.';
+  if (spec.type === 'time') return 'Enter a time such as 08:00.';
+  return `Enter a whole number from ${spec.min} to ${spec.max}.`;
 }
 
 /** Checks a { group: { field: value } } patch. Unknown groups/fields -> 400; bad values -> 400 per field. */
@@ -44,6 +46,12 @@ export async function updateSchoolSettings(ctx, body) {
   const patch = validateSettingsPatch(body);
   await db.runTransaction(async (tx) => {
     const current = await readSchoolSettings(tx);
+    // Class hours must make sense together, whichever of the two was sent.
+    const hours = { ...current.attendance, ...patch.attendance };
+    if (minutesOfTime(hours.classEndTime) <= minutesOfTime(hours.classStartTime)) {
+      const message = 'Classes must end after they start.';
+      throw new HttpError(400, 'validation/invalid-settings', message, { fields: { 'attendance.classEndTime': message } });
+    }
     for (const [group, values] of Object.entries(patch)) {
       const changed = Object.entries(values).filter(([key, value]) => current[group][key] !== value);
       if (!changed.length) continue;

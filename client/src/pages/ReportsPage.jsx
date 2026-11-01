@@ -6,7 +6,7 @@ import { AttendanceIcon, StarIcon } from '../components/ui/icons.jsx';
 
 const VIEWS = [
   { key: 'attendance', label: 'Attendance', icon: AttendanceIcon },
-  { key: 'performance', label: 'Performance Evaluation', icon: StarIcon },
+  { key: 'performance', label: 'Behavioral Evaluation', icon: StarIcon },
 ];
 
 /** Reports for staff (admin and teacher). The API checks the role on every request. */

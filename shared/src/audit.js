@@ -21,8 +21,8 @@ export const AUDIT_CATEGORY_LABELS = Object.freeze({
   student: 'Students',
   rfid: 'RFID cards & scans',
   attendance: 'Attendance',
-  performance: 'Performance Evaluation',
-  fetcher: 'Fetchers',
+  performance: 'Behavioral Evaluation',
+  fetcher: 'Pick-up people',
   dismissal: 'Dismissal Verification',
   sms: 'SMS',
   settings: 'School settings',
@@ -56,6 +56,7 @@ export const AUDIT_EVENTS = Object.freeze({
   'student.reactivated': { category: 'student', label: 'Student reactivated' },
   'section.added': { category: 'student', label: 'Section added' },
   'section.removed': { category: 'student', label: 'Section removed' },
+  'section.class-hours-changed': { category: 'student', label: 'Section class hours changed' },
 
   'rfid.card.registered': { category: 'rfid', label: 'RFID card registered' },
   'rfid.card.assigned': { category: 'rfid', label: 'RFID card assigned' },
@@ -65,20 +66,22 @@ export const AUDIT_EVENTS = Object.freeze({
   'rfid.card.reactivated': { category: 'rfid', label: 'RFID card reactivated' },
   'rfid.scan.rejected': { category: 'rfid', label: 'RFID scan not recorded' },
 
-  'attendance.time-in': { category: 'attendance', label: 'Time in recorded' },
-  'attendance.time-out': { category: 'attendance', label: 'Time out recorded' },
+  'attendance.time-in': { category: 'attendance', label: 'Arrival recorded' },
+  'attendance.time-out': { category: 'attendance', label: 'Pick-up recorded' },
+  'attendance.late-excused': { category: 'attendance', label: 'Late arrival excused' },
+  'attendance.late-excuse-removed': { category: 'attendance', label: 'Late excuse removed' },
 
   'performance.created': { category: 'performance', label: 'Evaluation created' },
   'performance.updated': { category: 'performance', label: 'Evaluation updated' },
 
-  'fetcher.created': { category: 'fetcher', label: 'Fetcher added' },
-  'fetcher.updated': { category: 'fetcher', label: 'Fetcher updated' },
-  'fetcher.deactivated': { category: 'fetcher', label: 'Fetcher deactivated' },
+  'fetcher.created': { category: 'fetcher', label: 'Pick-up person added' },
+  'fetcher.updated': { category: 'fetcher', label: 'Pick-up person updated' },
+  'fetcher.deactivated': { category: 'fetcher', label: 'Pick-up person deactivated' },
 
   'dismissal.code-requested': { category: 'dismissal', label: 'Dismissal code requested' },
   'dismissal.verify-failed': { category: 'dismissal', label: 'Dismissal code not accepted' },
   'dismissal.verified': { category: 'dismissal', label: 'Dismissal code verified' },
-  'dismissal.released': { category: 'dismissal', label: 'Child released to Fetcher' },
+  'dismissal.released': { category: 'dismissal', label: 'Child released to pick-up person' },
   'dismissal.release-failed': { category: 'dismissal', label: 'Release not completed' },
 
   'sms.attendance-notification': { category: 'sms', label: 'Attendance SMS' },

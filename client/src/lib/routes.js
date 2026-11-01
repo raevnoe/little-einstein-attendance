@@ -13,6 +13,9 @@ import { ROLES } from '@led/shared';
 
 export const LANDING_PATH = '/';
 export const LOGIN_PATH = '/login';
+// Where the password setup / reset email sends people (Firebase "custom action URL"): the app's own
+// page, so the password rules apply there too. Shown whether or not someone is signed in.
+export const SET_PASSWORD_PATH = '/set-password';
 
 export const DASHBOARD_PATHS = Object.freeze({
   [ROLES.ADMIN]: '/admin-dashboard',
@@ -65,6 +68,7 @@ export function parsePath(pathname) {
   const path = normalize(pathname);
   if (path === LANDING_PATH) return { page: 'landing' };
   if (path === LOGIN_PATH) return { page: 'login' };
+  if (path === SET_PASSWORD_PATH) return { page: 'set-password' };
   for (const [role, base] of Object.entries(DASHBOARD_PATHS)) {
     if (path !== base && !path.startsWith(`${base}/`)) continue;
     const slug = path.slice(base.length + 1);

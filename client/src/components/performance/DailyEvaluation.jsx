@@ -201,7 +201,7 @@ export default function DailyEvaluation() {
           {!ready ? (
             <LoadingState className="py-6">Loading evaluations…</LoadingState>
           ) : result.error ? null : (
-            <ul className="grid gap-4 lg:grid-cols-2" aria-label={`Performance areas for ${studentFullName(student)}`}>
+            <ul className="grid gap-4 lg:grid-cols-2" aria-label={`Behavior areas for ${studentFullName(student)}`}>
               {PERFORMANCE_AREAS.map((area) => {
                 const evaluation = byArea.get(area.key) ?? null;
                 return (

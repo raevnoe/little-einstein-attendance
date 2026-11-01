@@ -1,7 +1,7 @@
 // Turns one submitAttendanceScan() result into what the large scan-result card shows.
 // Display only: it reads the result the scan request already returned and makes no request.
-import { SCAN_OUTCOMES } from '@led/shared';
-import { formatTime } from './format.js';
+import { ARRIVAL_STATUS, DEPARTURE_STATUS, SCAN_OUTCOMES } from '@led/shared';
+import { formatTime, lateText } from './format.js';
 
 export const FEEDBACK_KINDS = Object.freeze({
   SUCCESS: 'success', // time in / time out recorded
@@ -25,8 +25,8 @@ const CARD_TITLES = {
 /** Both recorded times when present, otherwise none. */
 function recordedTimes(attendance, timeZone) {
   const times = [];
-  if (attendance?.timeIn) times.push({ label: 'Time In', value: formatTime(attendance.timeIn, timeZone) });
-  if (attendance?.timeOut) times.push({ label: 'Time Out', value: formatTime(attendance.timeOut, timeZone) });
+  if (attendance?.timeIn) times.push({ label: 'Arrived', value: formatTime(attendance.timeIn, timeZone) });
+  if (attendance?.timeOut) times.push({ label: 'Picked up', value: formatTime(attendance.timeOut, timeZone) });
   return times;
 }
 
@@ -43,16 +43,18 @@ export function describeScanResult(result, { timeZone } = {}) {
       return {
         ...base,
         kind: FEEDBACK_KINDS.SUCCESS,
-        title: 'Time In Recorded',
-        times: [{ label: 'Time In', value: formatTime(result.attendance?.timeIn, timeZone) }],
-        message: 'Attendance recorded successfully.',
+        title: result.attendance?.arrivalStatus === ARRIVAL_STATUS.LATE ? 'Arrival Recorded · Late' : 'Arrival Recorded',
+        times: [{ label: 'Arrived', value: formatTime(result.attendance?.timeIn, timeZone) }],
+        message: result.attendance?.arrivalStatus === ARRIVAL_STATUS.LATE
+          ? `Attendance recorded. ${lateText(result.attendance.lateMinutes)}.`
+          : 'Attendance recorded successfully.',
       };
     case SCAN_OUTCOMES.TIME_OUT:
       return {
         ...base,
         kind: FEEDBACK_KINDS.SUCCESS,
-        title: 'Time Out Recorded',
-        times: [{ label: 'Time Out', value: formatTime(result.attendance?.timeOut, timeZone) }],
+        title: result.attendance?.departureStatus === DEPARTURE_STATUS.EARLY ? 'Pick-up Recorded · Early' : 'Pick-up Recorded',
+        times: [{ label: 'Picked up', value: formatTime(result.attendance?.timeOut, timeZone) }],
         message: 'Attendance recorded successfully.',
       };
     case SCAN_OUTCOMES.DUPLICATE_IGNORED:

@@ -12,6 +12,6 @@ export const REPORT_ATTENDANCE_STATUS = Object.freeze({
 });
 
 export const REPORT_ATTENDANCE_STATUS_LABELS = Object.freeze({
-  [REPORT_ATTENDANCE_STATUS.TIME_OUT_RECORDED]: 'Time in and time out recorded',
-  [REPORT_ATTENDANCE_STATUS.NO_TIME_OUT_RECORDED]: 'No time out recorded',
+  [REPORT_ATTENDANCE_STATUS.TIME_OUT_RECORDED]: 'Arrived and picked up',
+  [REPORT_ATTENDANCE_STATUS.NO_TIME_OUT_RECORDED]: 'No pick-up recorded',
 });

@@ -5,6 +5,8 @@ import { formatDate, formatTime } from '../lib/format.js';
 import { browserIsIdle, createPoller } from '../lib/poller.js';
 import { dataSignature, soundIfChanged } from '../lib/refreshSound.js';
 import AttendanceStatusBadge from '../components/attendance/AttendanceStatusBadge.jsx';
+import ArrivalBadge, { DepartureBadge } from '../components/attendance/ArrivalBadge.jsx';
+import LateExcuse from '../components/attendance/LateExcuse.jsx';
 import ManualScanPanel from '../components/attendance/ManualScanPanel.jsx';
 import ReaderScanPanel from '../components/attendance/ReaderScanPanel.jsx';
 import { Alert, Badge, Card, EmptyState, Field, LoadingState, ResponsiveTable, buttonClass, inputClass, TABLE, TD, TH, TR } from '../components/ui/index.js';
@@ -13,8 +15,10 @@ import { CalendarIcon, RefreshIcon, StudentsIcon } from '../components/ui/icons.
 // Counts come from the API's summary for the selected date (never computed or invented here).
 const SUMMARY_TILES = [
   { key: 'checkedIn', label: 'In school', dot: 'bg-leaf-400', border: 'border-leaf-100' },
-  { key: 'checkedOut', label: 'Went home', dot: 'bg-brand-500', border: 'border-brand-100' },
-  { key: 'absent', label: 'No time in', dot: 'bg-mist-400', border: 'border-brand-100' },
+  { key: 'checkedOut', label: 'Picked up', dot: 'bg-brand-500', border: 'border-brand-100' },
+  { key: 'late', label: 'Late', dot: 'bg-amber-500', border: 'border-amber-200' },
+  { key: 'notArrived', label: 'Not arrived', dot: 'bg-mist-400', border: 'border-brand-100' },
+  { key: 'absent', label: 'Absent', dot: 'bg-red-600', border: 'border-red-200' },
   { key: 'total', label: 'Students', dot: 'bg-sky-500', border: 'border-sky-100' },
 ];
 
@@ -113,15 +117,16 @@ export default function AttendancePage() {
             <CalendarIcon className="h-5 w-5 text-brand-500" />
             {formatDate(data.schoolDate)}
             {viewingToday && <Badge tone="brand">Today</Badge>}
+            {data.noClass && <Badge tone="neutral">No class: {data.noClass}</Badge>}
           </p>
-          <dl className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             {SUMMARY_TILES.map((tile) => (
               <div key={tile.key} className={`rounded-2xl border bg-paper p-4 shadow-sm ${tile.border}`}>
                 <dt className="flex items-center gap-2 text-sm font-semibold text-brand-700">
                   <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${tile.dot}`} />
                   {tile.label}
                 </dt>
-                <dd className="mt-1 text-3xl font-bold tabular-nums text-brand-900">{data.summary[tile.key]}</dd>
+                <dd className="mt-1 text-3xl font-bold tabular-nums text-brand-900">{data.summary[tile.key] ?? 0}</dd>
               </div>
             ))}
           </dl>
@@ -152,8 +157,10 @@ export default function AttendancePage() {
             <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass({ className: 'w-auto' })}>
               <option value="all">All</option>
               <option value={ATTENDANCE_STATUS.CHECKED_IN}>In school</option>
-              <option value={ATTENDANCE_STATUS.CHECKED_OUT}>Went home</option>
-              <option value={ATTENDANCE_STATUS.ABSENT}>No time in</option>
+              <option value={ATTENDANCE_STATUS.CHECKED_OUT}>Picked up</option>
+              <option value={ATTENDANCE_STATUS.NOT_ARRIVED}>Not arrived</option>
+              <option value={ATTENDANCE_STATUS.ABSENT}>Absent</option>
+              <option value={ATTENDANCE_STATUS.NO_CLASS}>No class</option>
             </select>
           </Field>
           <button type="button" onClick={refreshWithSound} className={buttonClass({ variant: 'secondary' })}>
@@ -168,14 +175,15 @@ export default function AttendancePage() {
           {/* Tablets and desktops: table. */}
           {records.length > 0 && (
             <ResponsiveTable label="Daily attendance" className="hidden sm:block print:block">
-              <table className={`${TABLE} min-w-[640px]`}>
+              <table className={`${TABLE} min-w-[760px]`}>
                 <thead>
                   <tr>
                     <th scope="col" className={TH}>Student ID</th>
                     <th scope="col" className={TH}>Name</th>
                     <th scope="col" className={TH}>Section</th>
-                    <th scope="col" className={TH}>Time In</th>
-                    <th scope="col" className={TH}>Time Out</th>
+                    <th scope="col" className={TH}>Arrived</th>
+                    <th scope="col" className={TH}>Arrival</th>
+                    <th scope="col" className={TH}>Picked up</th>
                     <th scope="col" className={TH}>Status</th>
                   </tr>
                 </thead>
@@ -189,7 +197,14 @@ export default function AttendancePage() {
                       </td>
                       <td className={`${TD} text-brand-700`}>{s.section}</td>
                       <td className={`${TD} tabular-nums`}><ScanTime time={a?.timeIn} source={a?.entrySource} timeZone={data.timeZone} /></td>
-                      <td className={`${TD} tabular-nums`}><ScanTime time={a?.timeOut} source={a?.exitSource} timeZone={data.timeZone} /></td>
+                      <td className={`${TD} max-w-64`}>
+                        <ArrivalBadge attendance={a} showOnTime />
+                        <LateExcuse studentName={s.firstName} attendance={a} onChanged={refresh} />
+                      </td>
+                      <td className={`${TD} tabular-nums`}>
+                        <ScanTime time={a?.timeOut} source={a?.exitSource} timeZone={data.timeZone} />
+                        <DepartureBadge attendance={a} className="mt-1" />
+                      </td>
                       <td className={TD}><AttendanceStatusBadge status={rowStatus} /></td>
                     </tr>
                   ))}
@@ -215,14 +230,21 @@ export default function AttendancePage() {
                   </div>
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
                     <div className="rounded-xl bg-canvas px-3 py-2">
-                      <dt className="text-xs font-semibold text-brand-500">Time In</dt>
+                      <dt className="text-xs font-semibold text-brand-500">Arrived</dt>
                       <dd className="font-semibold tabular-nums text-brand-900"><ScanTime time={a?.timeIn} source={a?.entrySource} timeZone={data.timeZone} /></dd>
                     </div>
                     <div className="rounded-xl bg-canvas px-3 py-2">
-                      <dt className="text-xs font-semibold text-brand-500">Time Out</dt>
+                      <dt className="text-xs font-semibold text-brand-500">Picked up</dt>
                       <dd className="font-semibold tabular-nums text-brand-900"><ScanTime time={a?.timeOut} source={a?.exitSource} timeZone={data.timeZone} /></dd>
+                      <DepartureBadge attendance={a} className="mt-1" />
                     </div>
                   </dl>
+                  {a?.arrivalStatus && a.arrivalStatus !== 'on-time' && (
+                    <div className="mt-3">
+                      <ArrivalBadge attendance={a} />
+                      <LateExcuse studentName={s.firstName} attendance={a} onChanged={refresh} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

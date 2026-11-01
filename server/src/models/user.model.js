@@ -9,7 +9,7 @@
 // `attendanceSms` (parents only, optional): false = the parent turned off arrival/departure SMS
 // (honoured only while School Settings allow it; see notification.service.js).
 // It is stored only here - never copied into students, attendance, or other records.
-import { ALL_ROLES, COLLECTIONS, ROLES, normalizePhMobileNumber } from '@led/shared';
+import { ALL_ROLES, COLLECTIONS, ROLES, normalizePhMobileNumber, validatePersonName } from '@led/shared';
 import { db } from '../config/firebaseAdmin.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,12 +24,11 @@ export const usersCollection = () => db.collection(COLLECTIONS.USERS);
 // Validation errors carry the input `field` they belong to (shown next to that form field).
 const fieldError = (field, message) => Object.assign(new Error(message), { field });
 
+// Letters only (no numbers or symbols): the same rule as student and pick-up person names.
 function cleanName(value, field, label) {
-  const name = typeof value === 'string' ? value.trim() : '';
-  if (!name || name.length > NAME_MAX_LENGTH) {
-    throw fieldError(field, `${label} is required (max ${NAME_MAX_LENGTH} characters).`);
-  }
-  return name;
+  const result = validatePersonName(value, { label, max: NAME_MAX_LENGTH });
+  if (result.error) throw fieldError(field, result.error);
+  return result.value;
 }
 
 /** Validates input and returns the data fields for a new user document. */

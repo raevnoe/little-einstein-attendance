@@ -1,13 +1,13 @@
 // School Settings (admin) and personal preferences, shared by client and server. The server is the
 // authority: it validates every value against these limits and falls back to the default when a
 // stored value is missing or invalid.
-import { DEFAULT_RFID_DEBOUNCE_SECONDS } from './attendance.js';
+import { DEFAULT_CLASS_END_TIME, DEFAULT_CLASS_START_TIME, DEFAULT_LATE_GRACE_MINUTES, DEFAULT_RFID_DEBOUNCE_SECONDS, TIME_OF_DAY_PATTERN } from './attendance.js';
 import { DEFAULT_DISMISSAL_OTP_EXPIRY_MINUTES, DEFAULT_DISMISSAL_OTP_MAX_ATTEMPTS } from './dismissal.js';
 
 export const DEFAULT_DISMISSAL_REQUEST_COOLDOWN_SECONDS = 60;
 export const DEFAULT_DISMISSAL_MAX_CODES_PER_DAY = 5;
 
-// group -> field -> { type, default, min/max (integers), label, unit, hint }.
+// group -> field -> { type: integer | boolean | time ("HH:MM"), default, min/max (integers), label, unit, hint }.
 // Stored as systemSettings/{group} documents.
 export const SCHOOL_SETTINGS = Object.freeze({
   attendance: Object.freeze({
@@ -16,12 +16,26 @@ export const SCHOOL_SETTINGS = Object.freeze({
       label: 'Ignore repeated scans of the same card within',
       hint: 'A UHF reader can read a card several times. Repeats within this time are ignored.',
     }),
+    classStartTime: Object.freeze({
+      type: 'time', default: DEFAULT_CLASS_START_TIME,
+      label: 'Classes start at (school default)',
+      hint: 'A section can have its own start time (Students → Sections). Changes apply to arrivals after saving.',
+    }),
+    classEndTime: Object.freeze({
+      type: 'time', default: DEFAULT_CLASS_END_TIME,
+      label: 'Classes end at (school default)',
+      hint: 'Children not arrived by this time are marked absent; a pick-up before it is marked early. A section can have its own end time.',
+    }),
+    lateGraceMinutes: Object.freeze({
+      type: 'integer', default: DEFAULT_LATE_GRACE_MINUTES, min: 0, max: 60, unit: 'minutes',
+      label: 'Grace period: an arrival later than the start time plus this is marked late',
+    }),
   }),
   dismissal: Object.freeze({
     otpExpiryMinutes: Object.freeze({
       type: 'integer', default: DEFAULT_DISMISSAL_OTP_EXPIRY_MINUTES, min: 1, max: 30, unit: 'minutes',
       label: 'Dismissal code is valid for',
-      hint: 'Applies to codes requested after saving. Longer gives Fetchers who live far away more time.',
+      hint: 'Applies to codes requested after saving. Longer gives pick-up people who live far away more time.',
     }),
     otpMaxAttempts: Object.freeze({
       type: 'integer', default: DEFAULT_DISMISSAL_OTP_MAX_ATTEMPTS, min: 3, max: 10, unit: 'attempts',
@@ -63,6 +77,7 @@ export function defaultSchoolSettings() {
 /** True if `value` is allowed for this setting. */
 export function isValidSettingValue(spec, value) {
   if (spec.type === 'boolean') return typeof value === 'boolean';
+  if (spec.type === 'time') return typeof value === 'string' && TIME_OF_DAY_PATTERN.test(value);
   return Number.isInteger(value) && value >= spec.min && value <= spec.max;
 }
 

@@ -94,7 +94,7 @@ export default function ChildPerformance({ studentId, initialDate = '', onLoaded
 
   return (
     <Panel
-      title="Student Performance"
+      title="Behavior"
       titleId={`performance-${studentId}`}
       subtitle={date ? formatDate(date) : 'Last 30 days, newest first'}
       script
@@ -123,7 +123,7 @@ export default function ChildPerformance({ studentId, initialDate = '', onLoaded
       {data && days.length === 0 && (
         <div className="mt-4 flex items-center gap-3 rounded-2xl border border-dashed border-brand-200 px-4 py-4 text-sm text-brand-700">
           <StarShape className="h-5 w-5 shrink-0 text-star-empty" />
-          {date ? `No performance evaluations on ${formatDate(date)}.` : 'No performance evaluations in the last 30 days.'}
+          {date ? `No behavioral evaluations on ${formatDate(date)}.` : 'No behavioral evaluations in the last 30 days.'}
         </div>
       )}
 

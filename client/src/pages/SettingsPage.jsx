@@ -7,6 +7,7 @@ import AppearanceSettings from '../components/settings/AppearanceSettings.jsx';
 import ChangePasswordForm from '../components/settings/ChangePasswordForm.jsx';
 import ParentSmsSetting from '../components/settings/ParentSmsSetting.jsx';
 import SchoolSettingsForm from '../components/settings/SchoolSettingsForm.jsx';
+import SchoolCalendarForm from '../components/settings/SchoolCalendarForm.jsx';
 import { Alert, Button, Card, CardHeader, InlineConfirm } from '../components/ui/index.js';
 import { SignOutIcon, UserIcon } from '../components/ui/icons.jsx';
 
@@ -25,6 +26,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {role === ROLES.ADMIN && <SchoolSettingsForm />}
+      {role === ROLES.ADMIN && <SchoolCalendarForm />}
       <Card as="section" aria-labelledby="my-account-title">
         <CardHeader titleId="my-account-title" title="My account" icon={<UserIcon className="h-5 w-5" />} />
         <dl className="mt-5 grid gap-4 sm:grid-cols-3">
@@ -43,7 +45,7 @@ export default function SettingsPage() {
       </Card>
       {role === ROLES.PARENT && <ParentSmsSetting />}
       <AppearanceSettings />
-      <ChangePasswordForm email={profile.email} />
+      <ChangePasswordForm email={profile.email} names={[profile.firstName, profile.lastName]} />
       <SignOutEverywhere />
     </div>
   );

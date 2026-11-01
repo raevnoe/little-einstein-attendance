@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatTimeOfDay } from '@led/shared';
 import { apiRequest } from '../../lib/apiClient.js';
 import { useApiData } from '../../lib/useApiData.js';
 import { Alert, Badge, Card, InlineConfirm, LoadingState, buttonClass, inputClass, LABEL } from '../ui/index.js';
@@ -8,6 +9,8 @@ import { ChevronIcon, PlusIcon } from '../ui/icons.jsx';
  * Admin-only: the kindergarten sections that student records and teacher assignments use
  * (GET/POST/DELETE /api/admin/sections). A section still used by a student or teacher cannot be
  * removed (the server refuses it). Collapsed by default under the student list's toolbar.
+ * Each section may have its own class start time for late arrivals (PATCH /api/admin/sections/:name);
+ * without one it uses the school default from Settings -> School settings.
  */
 export default function SectionsPanel() {
   const [open, setOpen] = useState(false);
@@ -83,6 +86,17 @@ export default function SectionsPanel() {
                       <p className="text-sm text-brand-500">
                         {s.activeStudents} active student{s.activeStudents === 1 ? '' : 's'} · {s.teachers} teacher{s.teachers === 1 ? '' : 's'}
                       </p>
+                      <SectionHours
+                        section={s}
+                        disabled={busy !== null}
+                        onSave={(hours) => run(
+                          () => apiRequest(`/admin/sections/${encodeURIComponent(s.name)}`, { method: 'PATCH', body: hours }),
+                          s.name,
+                        ).then((ok) => {
+                          if (ok) setMessage({ error: false, text: `${s.name} class hours: ${hoursText(hours)}.` });
+                          return ok;
+                        })}
+                      />
                     </div>
                     {confirming === s.name ? (
                       <InlineConfirm
@@ -146,5 +160,51 @@ export default function SectionsPanel() {
         )}
       </div>
     </Card>
+  );
+}
+
+const timeOrDefault = (time) => (time ? formatTimeOfDay(time) : 'school default');
+const hoursText = ({ startTime, endTime }) => `${timeOrDefault(startTime)} – ${timeOrDefault(endTime)}`;
+
+/**
+ * "Class hours: 8:00 AM – 11:30 AM" for one section, with an inline editor. An empty time uses the
+ * school default (Settings -> School settings). The server checks that classes end after they start.
+ */
+function SectionHours({ section, disabled, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [start, setStart] = useState(section.startTime ?? '');
+  const [end, setEnd] = useState(section.endTime ?? '');
+  const id = `hours-${section.name}`;
+  const save = async (hours) => {
+    if (await onSave(hours)) setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <p className="mt-1 text-sm text-brand-700">
+        Class hours: <strong>{hoursText(section)}</strong>
+        <button type="button" disabled={disabled} onClick={() => setEditing(true)} className="ml-2 font-semibold text-brand-600 underline-offset-2 hover:underline dark:text-brand-300">
+          Change
+        </button>
+      </p>
+    );
+  }
+  return (
+    <div className="mt-2 flex flex-wrap items-end gap-2">
+      <div>
+        <label htmlFor={`${id}-start`} className={LABEL}>Classes start</label>
+        <input id={`${id}-start`} type="time" value={start} onChange={(e) => setStart(e.target.value)} className={inputClass({ className: 'w-auto min-h-10' })} />
+      </div>
+      <div>
+        <label htmlFor={`${id}-end`} className={LABEL}>Classes end</label>
+        <input id={`${id}-end`} type="time" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass({ className: 'w-auto min-h-10' })} />
+      </div>
+      <button type="button" disabled={disabled} onClick={() => save({ startTime: start || null, endTime: end || null })} className={buttonClass({ size: 'sm' })}>Save</button>
+      {(section.startTime || section.endTime) && (
+        <button type="button" disabled={disabled} onClick={() => save({ startTime: null, endTime: null })} className={buttonClass({ variant: 'secondary', size: 'sm' })}>Use school default</button>
+      )}
+      <button type="button" disabled={disabled} onClick={() => setEditing(false)} className={buttonClass({ variant: 'quiet', size: 'sm' })}>Cancel</button>
+      <p className="w-full text-xs text-brand-500">Leave a time empty to use the school default.</p>
+    </div>
   );
 }

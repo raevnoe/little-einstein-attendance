@@ -1856,6 +1856,80 @@ Settings + dark mode (developer request, 2026-10-27; PENDING developer browser t
   login and parent dashboard in dark. NOT checked: the real logo image on dark backgrounds (the harness does not load
   images), staff work screens with real data in dark, the password change against real Firebase.
 
+Late arrivals (developer request, 2026-10-27; developer chose the suggested defaults; PENDING developer browser test):
+
+* Rule (shared `arrivalFor`, shared/src/attendance.js): late = time-in STRICTLY after start time + grace; `lateMinutes` counted
+  from the start time. Start time = the student's section's own (`systemSettings/sections.startTimes[name]`, set with admin-only
+  `PATCH /api/admin/sections/:name { startTime: "HH:MM" | null }`, audited `section.start-time-changed`; add/remove keep the
+  map) or the school default (School Settings `attendance.classStartTime` "08:00", `lateGraceMinutes` 0-60 default 15; new
+  setting type `time`). Decided ONCE in the time-in transaction and STORED on the record: `arrivalStatus` on-time | late |
+  excused, `lateMinutes`, `scheduledStart`, `graceMinutes` (later setting changes never rewrite past days; older records have
+  no arrivalStatus and show nothing). Time-in audit details carry arrivalStatus + lateMinutes. SMS text unchanged (neutral).
+* Excuse: `PATCH /api/attendance/:studentId_date/late { excused: true, reason } | { excused: false }` (admin + teacher, teachers
+  only their sections -> else 404; reason 3-200 chars; only late/excused records -> else 409). Stores excuseReason/excusedBy/
+  excusedAt; audited `attendance.late-excused` / `attendance.late-excuse-removed` WITHOUT the reason text. Parents see
+  arrivalStatus/lateMinutes, never the reason.
+* Counts: attendance list summary `late`, `excusedLate`; reports/today `attendance.late` (excused not counted); attendance
+  report per day `late`/`lateExcused`, per student `daysLate`/`daysLateExcused`, records arrivalStatus/lateMinutes (+ CSV).
+  Still NO absence totals (absent needs a school calendar).
+* Client: `ArrivalBadge`, `LateExcuse` (components/attendance), Late tile + Arrival column on Attendance, scan card "Time In
+  Recorded · Late", parent Arrival card + history badge, report columns/CSV, dashboard Late tile, SectionsPanel start time,
+  School Settings time input. `lateText` in lib/format.js. Staff sidebar: Sound + Dark mode stacked full width.
+* Tests: server/test/lateArrivals.test.js (8; start times "00:00"+0 = always late, "23:59"+60 = always on time, because the
+  real clock is used); audit/reports/settings tests updated for the new fields; client test/settings.test.js.
+
+On-screen wording (developer request, 2026-11-02, after the panel ruled the evaluation is BEHAVIORAL; PENDING developer browser test):
+
+* SCREEN TEXT ONLY: Performance Evaluation -> **Behavioral Evaluation** (nav "Behavior"); Time in -> **Arrived**; Time out / Went home ->
+  **Picked up**; No time in -> **Not arrived** (reports: "No arrival recorded"); May collect -> **Can pick up**; Fetcher -> **pick-up person**
+  ("Pick-up People", "Pick-up & Dismissal"). Departure SMS: "<name> was picked up at <time>." Server error messages, inbox texts and
+  audit labels follow. CODE NAMES ARE UNCHANGED (collection `performance`, `/api/performance`, `fetchers`, PERFORMANCE_* constants,
+  Fetcher* components): new UI text must use the new words, code keeps the old names.
+* Behavior areas (shared/src/performance.js): following-directions, sharing-cooperation, self-control, class-participation,
+  manners-respect, independence. The old academic areas (language, mathematics, science, social-skills, motor-skills,
+  classroom-behavior) can no longer be chosen; old records still show their names (RETIRED_AREA_LABELS). Quick phrases rewritten.
+* Tests updated to the new keys and texts (server 222, client 128 pass). The paper is NOT changed by Claude (developer handles it).
+
+Absent, class end time, early pick-up, parent calendar, designed email (developer request, 2026-11-02; PENDING developer browser
+test). Developer decisions: absent AFTER the class end time; class days Mon-Fri + admin no-class dates + school-year start; end time
+= absent cut-off AND early pick-up; email designed in the Firebase console (no email service).
+
+* Day status without a record (shared `dayStatusWithoutRecord`, NEVER stored): no-class (weekend, `systemSettings/calendar`
+  noClassDates, before schoolYearStart, or before the student's createdAt) | not-arrived (today before the section's end time) |
+  absent. ATTENDANCE_STATUS gained NOT_ARRIVED / NO_CLASS ("absent" used to mean "no record"). Calendar: model
+  `models/calendar.model.js` (30 s cache), `services/calendar.service.js`, admin `GET/PUT /api/admin/calendar` (whole
+  calendar, validated, audited as settings.changed target calendar). Client: Settings -> School calendar (SchoolCalendarForm).
+* End time: School Settings `attendance.classEndTime` (default 11:30; must be after classStartTime) + per-section `endTimes`
+  (`PATCH /api/admin/sections/:name { startTime?, endTime? }`, audited `section.class-hours-changed`, replaces
+  section.start-time-changed). Early pick-up decided at time-out and STORED: departureStatus on-time|early, earlyMinutes, scheduledEnd.
+* Counts: attendance summary absent/notArrived/noClass/early + `noClass` reason; reports/today notArrived/absent/pickedUpEarly/noClass;
+  attendance report per day absent/noClass/pickedUpEarly, per student daysAbsent/absentDates/daysPickedUpEarly. Reports NOW show
+  absences (the old "no absence totals" rule is replaced by the calendar).
+* Parent calendar: `GET /api/parent/children/:id/calendar?month=YYYY-MM` (own child, no future month) -> days present|late|excused|
+  absent|not-arrived|no-class|future (+ times, minutes, note). Client `components/attendance/ChildCalendar.jsx` on Daily Records:
+  green present, yellow late, red absent, grey no class; text labels + legend (colour never alone).
+* Durations in words: `durationText` / `lateText` / `earlyText` (lib/format.js): "1 hour 15 min late".
+* Email: `docs/email-templates/password-reset.html` (tables + inline styles, logo from the Hosting icons) to paste into Firebase
+  Console -> Authentication -> Templates -> Password reset; one design for account setup AND forgot password.
+* Tests: server/test/absent.test.js (8, fixed September 2026 dates); report/today tests check calendar-dependent counts separately.
+
+Validation pass (developer request, 2026-11-02; PENDING developer browser test). Shared rules in `shared/src/validation.js`:
+
+* Names (`validatePersonName`, PERSON_NAME_PATTERN): letters of any language joined by single spaces, hyphens, apostrophes or
+  periods ("Ma. Clara", "Dela Cruz", "Juan Cruz Jr."); "cannot contain numbers"; no symbols or doubled punctuation. Used for
+  student first/middle/last, account first/last (was length-only before) and pick-up person full name.
+* Students: at least 2 and at most 12 years old; same first + last name + birthday as another student -> 409
+  `students/duplicate-person` (create and edit; `samePersonKey`). Pick-up people: same name as another ACTIVE one of the same
+  parent -> 409 `fetchers/duplicate-name`. Late excuse and calendar reasons must contain letters (`hasLetters`).
+* Passwords (never reach our server): `PASSWORD_RULES` 8+ chars, upper, lower, number, special; `passwordProblems` also refuses
+  common passwords and ones containing the email name / first / last name; `passwordStrength` 0-4. Applied by
+  Settings -> Change password and the app's own `/set-password` page (`pages/SetPasswordPage.jsx`: Firebase
+  verifyPasswordResetCode + confirmPasswordReset; shown signed in or out). `components/PasswordChecklist.jsx` = live checklist +
+  meter. REQUIRES the developer to set Firebase Console -> Authentication -> Templates -> (any template) -> Customize action URL
+  = https://little-einstein-attendance.web.app/set-password, otherwise the email still opens Firebase's own page (6+ chars only).
+  Someone calling Firebase's API directly can still bypass client rules; only a Firebase password policy would stop that.
+* Tests: server/test/validation.test.js (8).
+
 Page addresses (developer request, 2026-10-24; PENDING developer browser test). Client only, no new packages:
 
 * `/` landing, `/login`, `/admin-dashboard`, `/teacher-dashboard`, `/parent-dashboard` + one section part:

@@ -24,7 +24,7 @@ import { auditInTransaction } from './audit.service.js';
 import { recordOwnershipDenied } from './student.service.js';
 
 // Same message whether the Fetcher does not exist or belongs to another parent.
-const FETCHER_NOT_FOUND = () => new HttpError(404, 'fetchers/not-found', 'This Fetcher could not be found.');
+const FETCHER_NOT_FOUND = () => new HttpError(404, 'fetchers/not-found', 'This pick-up person could not be found.');
 const invalid = (fields) => new HttpError(400, 'validation/invalid-fetcher', 'Please correct the highlighted fields.', { fields });
 
 const fullName = (s) => [s.firstName, s.middleName, s.lastName].filter(Boolean).join(' ');
@@ -69,6 +69,15 @@ export async function listOwnFetchers(parentUid) {
 }
 
 /** `ctx` = auditContext(req) of the parent; `parentUid` is that same verified parent. */
+/** 409 when the parent already has an ACTIVE pick-up person with this name (ignoring case and spaces). */
+function assertNoSameName(fetchers, fullName, ownId = null) {
+  const key = (n) => String(n ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (fetchers.some((f) => f.active && f.fetcherId !== ownId && key(f.fullName) === key(fullName))) {
+    const message = 'You already have a pick-up person with this name.';
+    throw new HttpError(409, 'fetchers/duplicate-name', message, { fields: { fullName: message } });
+  }
+}
+
 export async function createFetcher(ctx, parentUid, input) {
   const body = asObject(input);
   rejectUnknownFields(body);
@@ -76,10 +85,12 @@ export async function createFetcher(ctx, parentUid, input) {
   if (Object.keys(errors).length) throw invalid(errors);
   await assertOwnChildren(parentUid, data.studentIds);
 
-  const activeCount = (await findFetchersByParent(parentUid)).filter((f) => f.active).length;
+  const own = await findFetchersByParent(parentUid);
+  assertNoSameName(own, data.fullName);
+  const activeCount = own.filter((f) => f.active).length;
   if (activeCount >= MAX_ACTIVE_FETCHERS_PER_PARENT) {
     throw new HttpError(409, 'fetchers/limit-reached',
-      `You can have at most ${MAX_ACTIVE_FETCHERS_PER_PARENT} active Fetchers. Deactivate one first.`);
+      `You can have at most ${MAX_ACTIVE_FETCHERS_PER_PARENT} active pick-up people. Deactivate one first.`);
   }
 
   const ref = fetchersCollection().doc();
@@ -109,9 +120,10 @@ export async function updateFetcher(ctx, parentUid, fetcherId, input) {
 
   const fetcher = await ownFetcher(parentUid, fetcherId);
   if (!fetcher.active) {
-    throw new HttpError(409, 'fetchers/inactive', 'This Fetcher has been deactivated and can no longer be edited.');
+    throw new HttpError(409, 'fetchers/inactive', 'This pick-up person has been deactivated and can no longer be edited.');
   }
   if (data.studentIds) await assertOwnChildren(parentUid, data.studentIds);
+  if (data.fullName) assertNoSameName(await findFetchersByParent(parentUid), data.fullName, fetcherId);
 
   const changedFields = Object.keys(data).filter((key) => JSON.stringify(fetcher[key]) !== JSON.stringify(data[key]));
   await db.runTransaction(async (tx) => {

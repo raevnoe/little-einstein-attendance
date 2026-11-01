@@ -1,22 +1,36 @@
-// Student Performance Evaluation constants shared by client and server (the server is the authority).
-// This is a daily kindergarten observation with a visual 1-5 star rating. It is NOT
+// Behavioral Evaluation constants shared by client and server (the server is the authority).
+// (Code names still say "performance": the feature was renamed on screen after the panel review;
+// the collection, API paths and constants keep their original names so nothing breaks.)
+// This is a daily kindergarten observation of behavior with a visual 1-5 star rating. It is NOT
 // an academic grade: no percentages, letter grades, GPA or grade computation.
 
-// Performance areas. `key` is stored and is part of the document ID, so keys must stay
+// Behavior areas. `key` is stored and is part of the document ID, so keys must stay
 // lowercase letters and hyphens and must never be renamed once records exist.
 // To change the list, edit it here (labels may change freely).
 export const PERFORMANCE_AREAS = Object.freeze([
-  Object.freeze({ key: 'language', label: 'Language' }),
-  Object.freeze({ key: 'mathematics', label: 'Mathematics' }),
-  Object.freeze({ key: 'science', label: 'Science' }),
-  Object.freeze({ key: 'social-skills', label: 'Social Skills' }),
-  Object.freeze({ key: 'motor-skills', label: 'Motor Skills' }),
-  Object.freeze({ key: 'classroom-behavior', label: 'Classroom Behavior' }),
+  Object.freeze({ key: 'following-directions', label: 'Following Directions' }),
+  Object.freeze({ key: 'sharing-cooperation', label: 'Sharing and Cooperation' }),
+  Object.freeze({ key: 'self-control', label: 'Self-Control' }),
+  Object.freeze({ key: 'class-participation', label: 'Class Participation' }),
+  Object.freeze({ key: 'manners-respect', label: 'Good Manners and Respect' }),
+  Object.freeze({ key: 'independence', label: 'Independence' }),
 ]);
 
 export const PERFORMANCE_AREA_KEYS = Object.freeze(PERFORMANCE_AREAS.map((a) => a.key));
 
-export const performanceAreaLabel = (key) => PERFORMANCE_AREAS.find((a) => a.key === key)?.label ?? key;
+// Areas used before the switch to behavior areas: records saved under them still show a readable
+// name. They can no longer be chosen for new evaluations.
+const RETIRED_AREA_LABELS = Object.freeze({
+  language: 'Language',
+  mathematics: 'Mathematics',
+  science: 'Science',
+  'social-skills': 'Social Skills',
+  'motor-skills': 'Motor Skills',
+  'classroom-behavior': 'Classroom Behavior',
+});
+
+export const performanceAreaLabel = (key) =>
+  PERFORMANCE_AREAS.find((a) => a.key === key)?.label ?? RETIRED_AREA_LABELS[key] ?? key;
 
 export const MIN_STAR_RATING = 1;
 export const MAX_STAR_RATING = 5;
@@ -46,16 +60,18 @@ export const starRatingLabel = (rating) => STAR_RATING_LABELS[rating] ?? '';
 // Quick phrases a teacher can tap to add to an observation (they can still type anything).
 export const OBSERVATION_PHRASES = Object.freeze({
   positive: Object.freeze([
-    'Participated actively',
-    'Followed instructions',
-    'Worked well with classmates',
-    'Showed improvement',
-    'Completed the activity',
+    'Followed instructions well',
+    'Shared and took turns',
+    'Stayed calm and patient',
+    'Joined activities happily',
+    'Was kind and polite',
+    'Tidied up on their own',
   ]),
   support: Object.freeze([
-    'Needs more practice',
-    'Needed reminders',
-    'Needed help to finish',
+    'Needed reminders to listen',
+    'Needed help to share',
+    'Got upset easily',
     'Was easily distracted',
+    'Needed help to finish tasks',
   ]),
 });

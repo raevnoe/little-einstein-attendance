@@ -3,7 +3,7 @@ import { ROLES } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { getChildOfParent, listChildrenOfParent, parseStudentId } from '../services/student.service.js';
-import { getChildAttendance } from '../services/attendance.service.js';
+import { getChildAttendance, getChildCalendar } from '../services/attendance.service.js';
 import { getChildPerformance } from '../services/performance.service.js';
 import { createFetcher, deactivateOwnFetcher, listOwnFetchers, parseFetcherId, updateFetcher } from '../services/fetcher.service.js';
 import { listOwnDismissals, requestDismissalCode } from '../services/dismissal.service.js';
@@ -27,6 +27,11 @@ router.get('/children', async (req, res) => {
 // GET /api/parent/children/:studentId - 404 unless this is the caller's own child.
 router.get('/children/:studentId', async (req, res) => {
   res.json({ child: await getChildOfParent(req.user.uid, parseStudentId(req.params.studentId)) });
+});
+
+// GET /api/parent/children/:studentId/calendar?month=YYYY-MM - own child's month: present / late / absent / no class.
+router.get('/children/:studentId/calendar', async (req, res) => {
+  res.json({ calendar: await getChildCalendar(req.user.uid, parseStudentId(req.params.studentId), req.query.month) });
 });
 
 // GET /api/parent/children/:studentId/attendance - own child's last 30 days (no RFID data).

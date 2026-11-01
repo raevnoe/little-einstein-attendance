@@ -13,6 +13,7 @@ import { Alert, Button, LoadingState } from './components/ui/index.js';
 import { RefreshIcon } from './components/ui/icons.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import SetPasswordPage from './pages/SetPasswordPage.jsx';
 import AccessDeniedPage from './pages/AccessDeniedPage.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import TeacherDashboard from './pages/teacher/TeacherDashboard.jsx';
@@ -119,6 +120,8 @@ function AppContent() {
   const pathname = usePathname();
 
   if (firebaseConfigError) return <CenteredMessage>{firebaseConfigError}</CenteredMessage>;
+  // The link in the password setup / reset email works the same whether or not someone is signed in.
+  if (parsePath(pathname).page === 'set-password') return <SetPasswordPage onDone={() => go(LOGIN_PATH)} />;
   if (status === 'loading') {
     return (
       <CenteredMessage>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { changePassword, MIN_PASSWORD_LENGTH, validatePasswordChange } from '../../lib/passwordChange.js';
+import { changePassword, validatePasswordChange } from '../../lib/passwordChange.js';
+import PasswordChecklist from '../PasswordChecklist.jsx';
 import { sendPasswordSetupEmail } from '../../lib/passwordSetupEmail.js';
 import { Alert, Button, Card, CardHeader, Field } from '../ui/index.js';
 import { inputClass } from '../ui/classes.js';
@@ -8,7 +9,8 @@ import { LockIcon } from '../ui/icons.jsx';
 const EMPTY = { current: '', next: '', confirm: '' };
 
 /** Change your own password (checked against the current one by Firebase). */
-export default function ChangePasswordForm({ email }) {
+export default function ChangePasswordForm({ email, names = [] }) {
+  const context = { email, names };
   const [values, setValues] = useState(EMPTY);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -19,7 +21,7 @@ export default function ChangePasswordForm({ email }) {
   async function submit(event) {
     event.preventDefault();
     setMessage(null);
-    const invalid = validatePasswordChange(values);
+    const invalid = validatePasswordChange(values, context);
     setErrors(invalid ?? {});
     if (invalid) return;
     setBusy(true);
@@ -62,9 +64,12 @@ export default function ChangePasswordForm({ email }) {
         {/* Lets password managers save the new password for the right account. */}
         <input type="email" name="username" autoComplete="username" value={email ?? ''} readOnly hidden />
         <Field id="password-current" label="Current password" error={errors.current}>{input('current', 'current-password')}</Field>
-        <Field id="password-next" label="New password" hint={`At least ${MIN_PASSWORD_LENGTH} characters.`} error={errors.next}>
-          {input('next', 'new-password')}
-        </Field>
+        <div>
+          <Field id="password-next" label="New password" error={errors.next}>
+            {input('next', 'new-password')}
+          </Field>
+          <PasswordChecklist password={values.next} context={context} id="password-next-rules" />
+        </div>
         <Field id="password-confirm" label="Type the new password again" error={errors.confirm}>{input('confirm', 'new-password')}</Field>
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" busy={busy} busyLabel="Changing…">Change password</Button>

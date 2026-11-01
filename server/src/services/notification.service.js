@@ -23,7 +23,7 @@ export function attendanceSmsMessage(event, student, occurredAt) {
   const time = formatSchoolTime(occurredAt);
   return event === NOTIFICATION_EVENTS.ARRIVAL
     ? `${SCHOOL_NAME}: ${name} has arrived at school at ${time}.`
-    : `${SCHOOL_NAME}: ${name} has checked out at ${time}.`;
+    : `${SCHOOL_NAME}: ${name} was picked up at ${time}.`;
 }
 
 /**

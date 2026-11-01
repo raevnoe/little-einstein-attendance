@@ -9,6 +9,7 @@ import { itemDate } from '../../lib/notificationFeed.js';
 import { studentFullName } from '../../lib/format.js';
 import { TodayAttendance, AttendanceHistory } from '../../components/attendance/ChildAttendance.jsx';
 import ChildPerformance from '../../components/performance/ChildPerformance.jsx';
+import ChildCalendar from '../../components/attendance/ChildCalendar.jsx';
 import ParentDismissal from '../../components/dismissal/ParentDismissal.jsx';
 import { SchoolLogo } from '../../components/landing/SchoolMark.jsx';
 import { EmptyState, HeroBanner, LoadingState, Sparkle } from '../../components/ui/index.js';
@@ -17,7 +18,7 @@ import SettingsPage from '../SettingsPage.jsx';
 
 const NAV = [
   { key: 'records', label: 'Daily Records', icon: RecordsIcon },
-  { key: 'dismissal', label: 'Fetchers & Dismissal', icon: DismissalIcon },
+  { key: 'dismissal', label: 'Pick-up & Dismissal', icon: DismissalIcon },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
@@ -124,6 +125,7 @@ function ChildRecords({ child, focus }) {
       <div ref={todayRef} className="scroll-mt-32">
         <TodayAttendance child={child} attendance={view} />
       </div>
+      <ChildCalendar studentId={child.studentId} />
       <div className="grid items-start gap-6 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <AttendanceHistory studentId={child.studentId} attendance={view} />
@@ -181,7 +183,7 @@ export default function ParentDashboard({ section, onSectionChange }) {
     <AppShell nav={NAV} activeKey={section} onNavigate={navigate}>
       <HeroBanner
         titleId="parent-welcome"
-        eyebrow={section === 'dismissal' ? 'Fetchers & Dismissal' : 'Daily Records'}
+        eyebrow={section === 'dismissal' ? 'Pick-up & Dismissal' : 'Daily Records'}
         title={`Welcome${firstName ? `, ${firstName}` : ''}!`}
         description={section === 'dismissal'
           ? 'Choose who may pick up your child, and send a dismissal code when someone else will.'

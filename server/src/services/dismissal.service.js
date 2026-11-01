@@ -85,7 +85,7 @@ const fullName = (s) => [s.firstName, s.middleName, s.lastName].filter(Boolean).
 // ---- errors (messages are safe for clients; none reveals a code or another family's data)
 const STUDENT_NOT_FOUND = () => new HttpError(404, 'students/not-found', 'This student could not be found.');
 const FETCHER_NOT_AUTHORIZED = () =>
-  new HttpError(404, 'fetchers/not-authorized', 'This Fetcher could not be found or is not authorized for this child.');
+  new HttpError(404, 'fetchers/not-authorized', 'This pick-up person could not be found or is not authorized for this child.');
 const DISMISSAL_NOT_FOUND = () =>
   new HttpError(404, 'dismissal/not-found', 'This dismissal request could not be found.');
 const NOT_VERIFIABLE = () =>
@@ -94,7 +94,7 @@ const STALE_REQUEST = () =>
   new HttpError(409, 'dismissal/request-changed', 'This dismissal request has changed. Refresh the list and try again.');
 const FETCHER_NO_LONGER_AUTHORIZED = () =>
   new HttpError(409, 'dismissal/fetcher-not-authorized',
-    'This Fetcher is no longer authorized to collect this child. Do not release the child.');
+    'This pick-up person is no longer authorized to pick up this child. Do not release the child.');
 
 function asObject(body) {
   return body && typeof body === 'object' && !Array.isArray(body) ? body : {};
@@ -518,7 +518,7 @@ export async function releaseStudent(ctx, dismissalId, input, { scope = ALL_SECT
       return { error: new HttpError(409, 'dismissal/already-released', 'This child has already been released.'), record };
     }
     if (record.status !== DISMISSAL_STATUS.VERIFIED) {
-      return { error: new HttpError(409, 'dismissal/not-verified', 'Verify the Fetcher’s code before releasing the child.'), record };
+      return { error: new HttpError(409, 'dismissal/not-verified', 'Verify the pick-up person’s code before releasing the child.'), record };
     }
     const { stillValid, student } = await readFetcherAndStudent(tx, record);
     if (!stillValid) {

@@ -29,8 +29,8 @@ const FEATURES = [
     tile: 'bg-sky-50 text-sky-700',
   },
   {
-    title: 'Performance',
-    text: "View your child's daily learning and classroom performance.",
+    title: 'Behavior',
+    text: "See how your child behaves and gets along in class each day.",
     icon: StarIcon,
     tile: 'bg-sun-50 text-sun-700',
   },
@@ -51,7 +51,7 @@ const FEATURES = [
 const STEPS = [
   { number: '1', title: 'Your child arrives', text: 'RFID attendance records the arrival.', dot: 'bg-sky-50 text-sky-700 ring-sky-500' },
   { number: '2', title: 'Stay informed', text: 'Parents receive important SMS notifications.', dot: 'bg-leaf-50 text-leaf-700 ring-leaf-400' },
-  { number: '3', title: 'Follow their progress', text: 'View daily attendance and performance records.', dot: 'bg-grape-50 text-grape-700 ring-grape-500' },
+  { number: '3', title: 'Follow their progress', text: 'View daily attendance and behavior records.', dot: 'bg-grape-50 text-grape-700 ring-grape-500' },
 ];
 
 function Header({ onLogin }) {
@@ -219,7 +219,7 @@ export default function LandingPage({ onLogin }) {
                 A brighter way to stay connected with your child&apos;s school.
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-brand-700">
-                Track attendance, view daily performance, and receive important school notifications in one simple place.
+                Track attendance, view daily behavior, and receive important school notifications in one simple place.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button type="button" onClick={onLogin} className={buttonClass({ size: 'lg' })}>

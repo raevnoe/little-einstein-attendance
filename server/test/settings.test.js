@@ -68,7 +68,8 @@ describe('School Settings (admin)', () => {
   test('returns the defaults when nothing is stored', async () => {
     const res = await settingsCall('GET', tokens.admin);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body.settings, { ...defaultSchoolSettings(), attendance: { rfidDebounceSeconds: 0 } });
+    const defaults = defaultSchoolSettings();
+    assert.deepEqual(res.body.settings, { ...defaults, attendance: { ...defaults.attendance, rfidDebounceSeconds: 0 } });
   });
 
   test('saves changed values with one audit entry per changed group', async () => {

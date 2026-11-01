@@ -14,7 +14,18 @@
 //   timeIn, no timeOut, after window  -> set timeOut            (time-out)
 //   timeOut set, within window        -> no change              (duplicate-ignored)
 //   timeOut set, after window         -> no change, logged      (already-completed)
-import { ATTENDANCE_STATUS, SCAN_OUTCOMES } from '@led/shared';
+import {
+  ARRIVAL_STATUS,
+  ATTENDANCE_STATUS,
+  DEPARTURE_STATUS,
+  LATE_EXCUSE_MAX_LENGTH,
+  SCAN_OUTCOMES,
+  hasLetters,
+  arrivalFor,
+  dayStatusWithoutRecord,
+  departureFor,
+  noClassReason,
+} from '@led/shared';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { env } from '../config/env.js';
@@ -26,14 +37,16 @@ import {
   toAttendanceView,
   toStaffAttendanceView,
 } from '../models/attendance.model.js';
-import { findAllStudents, studentsCollection, toStudentSummary } from '../models/student.model.js';
+import { findAllStudents, findStudentById, normalizeStudentId, studentsCollection, toStudentSummary } from '../models/student.model.js';
 import { getAttendanceSettings } from '../models/systemSettings.model.js';
 import { NOTIFICATION_EVENTS } from '../models/notification.model.js';
 import { notifyAttendanceEvent } from './notification.service.js';
 import { notifyAttendanceInApp, notifyRejectedScanInApp, notifySmsProblemInApp } from './inbox.service.js';
 import { resolveScannedUid } from './rfidCard.service.js';
 import { getChildOfParent, matchesStudentSearch } from './student.service.js';
-import { addDays, isValidSchoolDate, schoolDateOf } from '../utils/schoolDate.js';
+import { addDays, isValidSchoolDate, schoolDateOf, startOfSchoolDay } from '../utils/schoolDate.js';
+import { sectionTimeFor, sectionsRef } from '../models/section.model.js';
+import { getCalendar } from '../models/calendar.model.js';
 import { HttpError } from '../utils/httpError.js';
 import { SYSTEM_ACTOR, UNKNOWN_SCAN_WINDOW_MS, auditInTransaction, recordAudit } from './audit.service.js';
 import { ALL_SECTIONS, studentInScope } from '../utils/sectionScope.js';
@@ -53,12 +66,12 @@ const fullName = (s) => [s.firstName, s.middleName, s.lastName].filter(Boolean).
 
 function scanMessage(outcome, name, debounceSeconds) {
   switch (outcome) {
-    case SCAN_OUTCOMES.TIME_IN: return `Time in recorded for ${name}.`;
-    case SCAN_OUTCOMES.TIME_OUT: return `Time out recorded for ${name}.`;
+    case SCAN_OUTCOMES.TIME_IN: return `Arrival recorded for ${name}.`;
+    case SCAN_OUTCOMES.TIME_OUT: return `Pick-up recorded for ${name}.`;
     case SCAN_OUTCOMES.DUPLICATE_IGNORED:
       return `${name} was scanned moments ago. Repeated scans within ${debounceSeconds} seconds are ignored.`;
     case SCAN_OUTCOMES.ALREADY_COMPLETED:
-      return `${name} already has a time in and time out today. No changes were made.`;
+      return `${name} has already arrived and been picked up today. No changes were made.`;
     case SCAN_OUTCOMES.UNKNOWN_RFID: return 'This RFID card is not registered. No attendance was recorded.';
     case SCAN_OUTCOMES.RFID_INACTIVE: return 'This RFID card is inactive. No attendance was recorded.';
     case SCAN_OUTCOMES.RFID_UNASSIGNED: return 'This RFID card is not assigned to a student. No attendance was recorded.';
@@ -77,6 +90,48 @@ function decide(record, nowMs, debounceMs) {
   return nowMs - record.timeOut.toMillis() < debounceMs ? SCAN_OUTCOMES.DUPLICATE_IGNORED : SCAN_OUTCOMES.ALREADY_COMPLETED;
 }
 
+/** Sections' own class hours (systemSettings/sections); empty if unreadable (school defaults apply). */
+async function readSectionHours() {
+  try {
+    const snap = await sectionsRef().get();
+    const data = snap.exists ? snap.data() : {};
+    return { startTimes: data.startTimes ?? {}, endTimes: data.endTimes ?? {} };
+  } catch (err) {
+    console.error('[attendance] Could not read section class hours; using the school defaults:', err.message);
+    return { startTimes: {}, endTimes: {} };
+  }
+}
+
+/**
+ * Everything needed to say what a student WITHOUT a record is on a given day (absent, not arrived,
+ * no class): read once per request.
+ */
+export async function noRecordContext() {
+  const [settings, hours, calendar] = await Promise.all([getAttendanceSettings(), readSectionHours(), getCalendar()]);
+  const today = schoolDateOf();
+  return { today, elapsedMs: Date.now() - startOfSchoolDay(today), calendar, settings, hours };
+}
+
+/** The parent's own child (404 for anyone else, via getChildOfParent), as the full stored record. */
+async function ownChild(parentUid, studentId) {
+  await getChildOfParent(parentUid, studentId);
+  return findStudentById(studentId);
+}
+
+const enrolledFromOf = (student) => (student.createdAt?.toDate ? schoolDateOf(student.createdAt.toDate()) : null);
+
+/** not-arrived | absent | no-class | future for a student with no record on schoolDate. */
+export function statusWithoutRecord(student, schoolDate, ctx) {
+  return dayStatusWithoutRecord({
+    schoolDate,
+    today: ctx.today,
+    elapsedMs: ctx.elapsedMs,
+    endTime: sectionTimeFor(student.section, ctx.hours.endTimes, ctx.settings.classEndTime),
+    calendar: ctx.calendar,
+    enrolledFrom: enrolledFromOf(student),
+  });
+}
+
 /**
  * Processes one RFID scan. `source` is chosen by the SERVER code calling this (the scan route maps
  * the screen's allow-listed method to rfid-reader / manual-entry), never copied from a client. `ctx` is
@@ -93,7 +148,7 @@ export async function processRfidScan({ rawUid, source, ctx = { actor: SYSTEM_AC
     throw new HttpError(400, 'validation/invalid-rfid-uid', INVALID_UID_MESSAGE, { fields: { uid: INVALID_UID_MESSAGE } });
   }
 
-  const { rfidDebounceSeconds } = await getAttendanceSettings();
+  const { rfidDebounceSeconds, classStartTime, classEndTime, lateGraceMinutes } = await getAttendanceSettings();
   const result = (outcome, extra = {}) => ({
     outcome,
     accepted: ACCEPTED.has(outcome),
@@ -109,6 +164,7 @@ export async function processRfidScan({ rawUid, source, ctx = { actor: SYSTEM_AC
   if (resolved.problem) return logged(result(CARD_PROBLEM_OUTCOMES[resolved.problem]), source, ctx);
 
   const { studentId } = resolved.student;
+  const sectionHours = await readSectionHours();
   const decision = await db.runTransaction(async (tx) => {
     // The clock is read inside the transaction so a retried attempt uses the retry time.
     const now = Timestamp.now();
@@ -122,6 +178,13 @@ export async function processRfidScan({ rawUid, source, ctx = { actor: SYSTEM_AC
     if (!student.active) return { outcome: SCAN_OUTCOMES.STUDENT_INACTIVE, schoolDate, student };
 
     const outcome = decide(recordSnap.exists ? recordSnap.data() : null, now.toMillis(), rfidDebounceSeconds * 1000);
+    // Late or on time is decided once, at time-in, and stored (see ARRIVAL_STATUS in shared).
+    // Early pick-up likewise, at time-out, against the class end time.
+    const elapsedMs = now.toMillis() - startOfSchoolDay(schoolDate);
+    const startTime = sectionTimeFor(student.section, sectionHours.startTimes, classStartTime);
+    const endTime = sectionTimeFor(student.section, sectionHours.endTimes, classEndTime);
+    const arrival = outcome === SCAN_OUTCOMES.TIME_IN ? arrivalFor({ elapsedMs, startTime, graceMinutes: lateGraceMinutes }) : null;
+    const departure = outcome === SCAN_OUTCOMES.TIME_OUT ? departureFor({ elapsedMs, endTime }) : null;
     if (outcome === SCAN_OUTCOMES.TIME_IN) {
       tx.create(ref, {
         studentId,
@@ -133,6 +196,9 @@ export async function processRfidScan({ rawUid, source, ctx = { actor: SYSTEM_AC
         exitSource: null,
         entryRfidUid: resolved.uid,
         exitRfidUid: null,
+        ...arrival,
+        scheduledStart: startTime,
+        graceMinutes: lateGraceMinutes,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
@@ -142,6 +208,8 @@ export async function processRfidScan({ rawUid, source, ctx = { actor: SYSTEM_AC
         timeOut: now,
         exitSource: source,
         exitRfidUid: resolved.uid,
+        ...departure,
+        scheduledEnd: endTime,
         updatedAt: FieldValue.serverTimestamp(),
       });
     }
@@ -150,7 +218,7 @@ export async function processRfidScan({ rawUid, source, ctx = { actor: SYSTEM_AC
         ...ctx,
         eventType: outcome === SCAN_OUTCOMES.TIME_IN ? 'attendance.time-in' : 'attendance.time-out',
         target: { type: 'attendance', id: attendanceDocId(studentId, schoolDate) },
-        details: { studentId, schoolDate, source },
+        details: { studentId, schoolDate, source, ...(arrival ?? {}), ...(departure ?? {}) },
       });
     }
     return { outcome, schoolDate, student, now, exists: recordSnap.exists || outcome === SCAN_OUTCOMES.TIME_IN };
@@ -249,7 +317,7 @@ export function parseSchoolDate(value) {
  */
 export async function getDailyAttendance({ date, q, status, scope = ALL_SECTIONS } = {}) {
   const schoolDate = parseSchoolDate(date);
-  const [students, records] = await Promise.all([findAllStudents(), findAttendanceByDate(schoolDate)]);
+  const [students, records, ctx] = await Promise.all([findAllStudents(), findAttendanceByDate(schoolDate), noRecordContext()]);
   const recordsByStudent = new Map(records.map((r) => [r.studentId, r]));
 
   const rows = students
@@ -259,7 +327,7 @@ export async function getDailyAttendance({ date, q, status, scope = ALL_SECTIONS
       const record = recordsByStudent.get(s.studentId);
       return {
         student: toStudentSummary(s),
-        status: statusOf(record),
+        status: record ? statusOf(record) : statusWithoutRecord(s, schoolDate, ctx),
         attendance: record ? toStaffAttendanceView(record) : null,
       };
     });
@@ -267,8 +335,13 @@ export async function getDailyAttendance({ date, q, status, scope = ALL_SECTIONS
   const summary = {
     total: rows.length,
     absent: rows.filter((r) => r.status === ATTENDANCE_STATUS.ABSENT).length,
+    notArrived: rows.filter((r) => r.status === ATTENDANCE_STATUS.NOT_ARRIVED).length,
+    noClass: rows.filter((r) => r.status === ATTENDANCE_STATUS.NO_CLASS).length,
     checkedIn: rows.filter((r) => r.status === ATTENDANCE_STATUS.CHECKED_IN).length,
     checkedOut: rows.filter((r) => r.status === ATTENDANCE_STATUS.CHECKED_OUT).length,
+    late: rows.filter((r) => r.attendance?.arrivalStatus === ARRIVAL_STATUS.LATE).length,
+    excusedLate: rows.filter((r) => r.attendance?.arrivalStatus === ARRIVAL_STATUS.EXCUSED).length,
+    early: rows.filter((r) => r.attendance?.departureStatus === DEPARTURE_STATUS.EARLY).length,
   };
 
   const wantStatus = Object.values(ATTENDANCE_STATUS).includes(status) ? status : null;
@@ -277,12 +350,13 @@ export async function getDailyAttendance({ date, q, status, scope = ALL_SECTIONS
     .filter((r) => matchesStudentSearch(r.student, q))
     .sort((a, b) => a.student.lastName.localeCompare(b.student.lastName) || a.student.firstName.localeCompare(b.student.firstName));
 
-  return { schoolDate, today: schoolDateOf(), timeZone: env.schoolTimeZone, summary, records: filtered };
+  const noClass = noClassReason(schoolDate, ctx.calendar);
+  return { schoolDate, today: schoolDateOf(), timeZone: env.schoolTimeZone, noClass, summary, records: filtered };
 }
 
 /** A parent's own child's recent attendance, or 404 (same rule as the child lookup). */
 export async function getChildAttendance(parentUid, studentId) {
-  await getChildOfParent(parentUid, studentId);
+  const [student, ctx] = await Promise.all([ownChild(parentUid, studentId), noRecordContext()]);
   const today = schoolDateOf();
   const dates = Array.from({ length: PARENT_HISTORY_DAYS }, (_, i) => addDays(today, -i));
   const records = (await findAttendanceOfStudent(studentId, dates))
@@ -293,7 +367,99 @@ export async function getChildAttendance(parentUid, studentId) {
     studentId,
     today,
     timeZone: env.schoolTimeZone,
-    todayStatus: todayRecord?.status ?? ATTENDANCE_STATUS.ABSENT,
+    todayStatus: todayRecord?.status ?? statusWithoutRecord(student, today, ctx),
     records,
+  };
+}
+
+const ATTENDANCE_NOT_FOUND = () => new HttpError(404, 'attendance/not-found', 'This attendance record could not be found.');
+
+/** "K2026-001_2026-10-27" -> { studentId, schoolDate }, or 404 for anything else. */
+function parseAttendanceId(value) {
+  const match = /^(.+)_(\d{4}-\d{2}-\d{2})$/.exec(typeof value === 'string' ? value : '');
+  const studentId = match ? normalizeStudentId(match[1]) : null;
+  if (!studentId || !isValidSchoolDate(match[2])) throw ATTENDANCE_NOT_FOUND();
+  return { studentId, schoolDate: match[2] };
+}
+
+/**
+ * Excuses a LATE arrival ({ excused: true, reason }) or removes the excuse ({ excused: false }).
+ * Teachers only for students in their sections (others: 404, like a missing record). The reason
+ * stays on the attendance record for staff; the audit entry records only that it happened.
+ */
+export async function setLateExcuse(ctx, attendanceId, body, { scope = ALL_SECTIONS } = {}) {
+  const input = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  if (Object.keys(input).some((key) => !['excused', 'reason'].includes(key)) || typeof input.excused !== 'boolean') {
+    throw new HttpError(400, 'validation/invalid-request', 'Send { "excused": true, "reason": "..." } or { "excused": false }.');
+  }
+  const reason = typeof input.reason === 'string' ? input.reason.trim().replace(/\s+/g, ' ') : '';
+  if (input.excused && (reason.length < 3 || reason.length > LATE_EXCUSE_MAX_LENGTH || !hasLetters(reason))) {
+    const message = `Write a short reason (3-${LATE_EXCUSE_MAX_LENGTH} characters).`;
+    throw new HttpError(400, 'validation/invalid-reason', message, { fields: { reason: message } });
+  }
+  const { studentId, schoolDate } = parseAttendanceId(attendanceId);
+  const ref = attendanceRef(studentId, schoolDate);
+
+  await db.runTransaction(async (tx) => {
+    const [recordSnap, studentSnap] = await tx.getAll(ref, studentsCollection().doc(studentId));
+    if (!recordSnap.exists || !studentSnap.exists || !studentInScope(scope, studentSnap.data())) throw ATTENDANCE_NOT_FOUND();
+    const record = recordSnap.data();
+    const wanted = input.excused ? [ARRIVAL_STATUS.LATE, ARRIVAL_STATUS.EXCUSED] : [ARRIVAL_STATUS.EXCUSED];
+    if (!wanted.includes(record.arrivalStatus)) {
+      throw new HttpError(409, 'attendance/not-late', input.excused
+        ? 'Only a late arrival can be excused.'
+        : 'This arrival is not excused.');
+    }
+    tx.update(ref, input.excused
+      ? { arrivalStatus: ARRIVAL_STATUS.EXCUSED, excuseReason: reason, excusedBy: ctx.actor.uid ?? null, excusedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }
+      : { arrivalStatus: ARRIVAL_STATUS.LATE, excuseReason: null, excusedBy: null, excusedAt: null, updatedAt: FieldValue.serverTimestamp() });
+    auditInTransaction(tx, {
+      ...ctx,
+      eventType: input.excused ? 'attendance.late-excused' : 'attendance.late-excuse-removed',
+      target: { type: 'attendance', id: attendanceDocId(studentId, schoolDate) },
+      details: { studentId, schoolDate, lateMinutes: record.lateMinutes ?? null },
+    });
+  });
+  return { attendance: toStaffAttendanceView((await ref.get()).data()) };
+}
+
+const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/**
+ * A parent's own child's month, day by day, for the calendar: present (on time) | late | excused
+ * (late, excused) | absent | not-arrived | no-class | future, plus the times and early pick-up.
+ * ?month=YYYY-MM (default: this month; later months are refused).
+ */
+export async function getChildCalendar(parentUid, studentId, month) {
+  const [student, ctx] = await Promise.all([ownChild(parentUid, studentId), noRecordContext()]);
+  const thisMonth = ctx.today.slice(0, 7);
+  const wanted = month === undefined || month === '' ? thisMonth : month;
+  if (typeof wanted !== 'string' || !MONTH_PATTERN.test(wanted)) {
+    throw new HttpError(400, 'validation/invalid-month', 'Month must be YYYY-MM.');
+  }
+  if (wanted > thisMonth) throw new HttpError(400, 'validation/future-month', 'The calendar cannot show a future month.');
+
+  const daysInMonth = new Date(Date.UTC(Number(wanted.slice(0, 4)), Number(wanted.slice(5, 7)), 0)).getUTCDate();
+  const dates = Array.from({ length: daysInMonth }, (_, i) => `${wanted}-${String(i + 1).padStart(2, '0')}`);
+  const records = new Map((await findAttendanceOfStudent(studentId, dates.filter((d) => d <= ctx.today))).map((r) => [r.schoolDate, r]));
+
+  const days = dates.map((date) => {
+    const record = records.get(date);
+    if (!record) {
+      const status = statusWithoutRecord(student, date, ctx);
+      return { date, status, note: status === ATTENDANCE_STATUS.NO_CLASS ? noClassReason(date, ctx.calendar) ?? 'Not enrolled yet' : null };
+    }
+    const view = toAttendanceView(record);
+    const status = record.arrivalStatus === ARRIVAL_STATUS.LATE ? 'late' : record.arrivalStatus === ARRIVAL_STATUS.EXCUSED ? 'excused' : 'present';
+    return { date, status, timeIn: view.timeIn, timeOut: view.timeOut, lateMinutes: view.lateMinutes, departureStatus: view.departureStatus, earlyMinutes: view.earlyMinutes };
+  });
+  const count = (st) => days.filter((d) => d.status === st).length;
+  return {
+    studentId,
+    month: wanted,
+    today: ctx.today,
+    timeZone: env.schoolTimeZone,
+    summary: { present: count('present'), late: count('late') + count('excused'), absent: count('absent') },
+    days,
   };
 }

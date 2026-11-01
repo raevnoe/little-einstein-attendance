@@ -12,6 +12,14 @@
 //   exitSource    string?
 //   entryRfidUid  string     normalized card UID used for time-in (staff only)
 //   exitRfidUid   string?
+//   arrivalStatus string?    on-time | late | excused (decided at time-in; missing on older records)
+//   lateMinutes   number?    minutes after the start time (0 when on time)
+//   scheduledStart string?   "HH:MM" start time that applied (section's own or school default)
+//   graceMinutes  number?    grace period that applied
+//   excuseReason  string?    why a late arrival was excused (staff only; never in the audit log)
+//   departureStatus string?  on-time | early (decided at time-out against the class end time)
+//   earlyMinutes  number?    minutes before the end time (0 when not early); scheduledEnd = that end time
+//   excusedBy, excusedAt     who excused it and when (server values)
 //   createdAt, updatedAt
 //
 // Student details are NOT copied here; they are joined from students/{studentId}.
@@ -51,6 +59,10 @@ export function toAttendanceView(record) {
     status: record.status ?? ATTENDANCE_STATUS.CHECKED_IN,
     timeIn: iso(record.timeIn),
     timeOut: iso(record.timeOut),
+    arrivalStatus: record.arrivalStatus ?? null,
+    lateMinutes: record.lateMinutes ?? null,
+    departureStatus: record.departureStatus ?? null,
+    earlyMinutes: record.earlyMinutes ?? null,
   };
 }
 
@@ -62,6 +74,11 @@ export function toStaffAttendanceView(record) {
     exitSource: record.exitSource ?? null,
     entryRfidUid: record.entryRfidUid ?? null,
     exitRfidUid: record.exitRfidUid ?? null,
+    scheduledStart: record.scheduledStart ?? null,
+    graceMinutes: record.graceMinutes ?? null,
+    scheduledEnd: record.scheduledEnd ?? null,
+    excuseReason: record.excuseReason ?? null,
+    excusedAt: iso(record.excusedAt),
     createdAt: iso(record.createdAt),
     updatedAt: iso(record.updatedAt),
   };

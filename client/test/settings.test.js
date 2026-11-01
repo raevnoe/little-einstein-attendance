@@ -32,3 +32,31 @@ describe('Settings', () => {
     assert.deepEqual(smsSummary({ event: 'departure', status: 'opted-out' }).error, false);
   });
 });
+
+describe('late arrivals (display)', () => {
+  it('writes minutes late in words', async () => {
+    const { earlyText, lateText } = await import('../src/lib/format.js');
+    assert.equal(earlyText(30), 'Picked up 30 min early');
+    assert.equal(earlyText(90), 'Picked up 1 hour 30 min early');
+    assert.equal(lateText(22), '22 min late');
+    assert.equal(lateText(60), '1 hour late');
+    assert.equal(lateText(75), '1 hour 15 min late');
+    assert.equal(lateText(130), '2 hours 10 min late');
+    assert.equal(lateText(0), 'Late');
+    assert.equal(lateText(null), 'Late');
+  });
+
+  it('formats a start time for people', async () => {
+    const { formatTimeOfDay } = await import('@led/shared');
+    assert.equal(formatTimeOfDay('08:00'), '8:00 AM');
+    assert.equal(formatTimeOfDay('13:30'), '1:30 PM');
+    assert.equal(formatTimeOfDay('00:05'), '12:05 AM');
+  });
+});
+
+describe('password setup page', () => {
+  it('has its own address, whether or not someone is signed in', async () => {
+    const { parsePath } = await import('../src/lib/routes.js');
+    assert.deepEqual(parsePath('/set-password'), { page: 'set-password' });
+  });
+});

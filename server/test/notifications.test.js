@@ -103,8 +103,8 @@ describe('attendance', () => {
     assert.deepEqual(res.body.items.map((i) => i.kind), ['departure', 'arrival']);
     const [departure, arrival] = res.body.items;
     assert.equal(arrival.title, 'Ana arrived at school');
-    assert.match(arrival.body, /^Time in: \d{1,2}:\d{2} [AP]M$/);
-    assert.equal(departure.title, 'Ana left school');
+    assert.match(arrival.body, /^Arrived: \d{1,2}:\d{2} [AP]M$/);
+    assert.equal(departure.title, 'Ana was picked up');
     assert.equal(arrival.link, 'records');
     assert.equal(arrival.studentId, ANA);
     assert.deepEqual(Object.keys(arrival).sort(), ['body', 'date', 'id', 'kind', 'link', 'notifiedAt', 'studentId', 'title']);
@@ -186,7 +186,7 @@ describe('dismissal', () => {
       const [request1] = (await feed(token)).body.items;
       assert.equal(request1.kind, 'dismissal-request');
       assert.equal(request1.title, 'Dismissal request: Ana Test');
-      assert.equal(request1.body, 'Fetcher: Maria Santos (Aunt). Waiting for code verification.');
+      assert.equal(request1.body, 'Pick-up person: Maria Santos (Aunt). Waiting for code verification.');
       assert.equal(request1.link, 'dismissal');
     }
     assert.equal(items('teacherOff').length, 0);
@@ -235,14 +235,14 @@ describe('performance', () => {
       token: tokens.teacher,
       body: { studentId: BEN, evaluationDate: today, area, starRating: 4, observation: 'Shared crayons kindly.' },
     });
-    assert.equal((await save('language')).status, 201);
-    assert.equal((await save('mathematics')).status, 201);
-    assert.equal((await save('language')).status, 200); // edit: no duplicate area
+    assert.equal((await save('following-directions')).status, 201);
+    assert.equal((await save('sharing-cooperation')).status, 201);
+    assert.equal((await save('following-directions')).status, 200); // edit: no duplicate area
 
     const list = items('parentB');
     assert.equal(list.length, 1);
-    assert.equal(list[0].title, 'New Performance Evaluation for Ben');
-    assert.match(list[0].body, /: Language, Mathematics$/);
+    assert.equal(list[0].title, 'New Behavioral Evaluation for Ben');
+    assert.match(list[0].body, /: Following Directions, Sharing and Cooperation$/);
     assert.equal(list[0].date, today);
     const [view] = (await feed(tokens.parentB)).body.items;
     assert.equal(view.date, today);

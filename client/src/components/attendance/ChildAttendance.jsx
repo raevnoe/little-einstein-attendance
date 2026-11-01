@@ -6,6 +6,7 @@ import Panel, { ErrorMessage, QuietButton } from '../Panel.jsx';
 import { PARENT_STATUS_LABELS } from '../../lib/attendanceStatusLabels.js';
 import { InitialsAvatar, LoadingState, Sparkle } from '../ui/index.js';
 import { CalendarIcon } from '../ui/icons.jsx';
+import ArrivalBadge, { DepartureBadge } from './ArrivalBadge.jsx';
 
 // A parent's view of ONE own child's attendance. The data comes from
 // GET /api/parent/children/:studentId/attendance (the server returns 404 for anyone else's child),
@@ -16,16 +17,25 @@ const HISTORY_STEP = 5;
 const STATUS_TONE = {
   [ATTENDANCE_STATUS.CHECKED_IN]: { banner: 'bg-leaf-50 ring-leaf-100', icon: 'bg-leaf-400 text-white' },
   [ATTENDANCE_STATUS.CHECKED_OUT]: { banner: 'bg-grape-50 ring-grape-100', icon: 'bg-grape-500 text-white' },
-  [ATTENDANCE_STATUS.ABSENT]: { banner: 'bg-canvas ring-brand-100', icon: 'bg-paper text-brand-500 ring-1 ring-inset ring-brand-200' },
+  [ATTENDANCE_STATUS.NOT_ARRIVED]: { banner: 'bg-canvas ring-brand-100', icon: 'bg-paper text-brand-500 ring-1 ring-inset ring-brand-200' },
+  [ATTENDANCE_STATUS.ABSENT]: { banner: 'bg-red-50 ring-red-200', icon: 'bg-red-600 text-white' },
+  [ATTENDANCE_STATUS.NO_CLASS]: { banner: 'bg-canvas ring-brand-100', icon: 'bg-paper text-brand-500 ring-1 ring-inset ring-brand-200' },
 };
 
 const STATUS_PATHS = {
   [ATTENDANCE_STATUS.CHECKED_IN]: <path d="M5 12.5l4.5 4.5L19 7.5" />,
   [ATTENDANCE_STATUS.CHECKED_OUT]: <path d="M14 7l5 5-5 5M19 12H9M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h5" />,
-  [ATTENDANCE_STATUS.ABSENT]: (
+  [ATTENDANCE_STATUS.NOT_ARRIVED]: (
     <>
       <circle cx="12" cy="12" r="8" />
       <path d="M12 8v4.5l3 2" />
+    </>
+  ),
+  [ATTENDANCE_STATUS.ABSENT]: <path d="M7 7l10 10M17 7L7 17" />,
+  [ATTENDANCE_STATUS.NO_CLASS]: (
+    <>
+      <rect x="4" y="5.5" width="16" height="14" rx="2" />
+      <path d="M8 3.5v4M16 3.5v4M4 10h16" />
     </>
   ),
 };
@@ -40,14 +50,16 @@ function StatusIcon({ status }) {
 
 function statusSentence(status, record, timeZone) {
   if (status === ATTENDANCE_STATUS.CHECKED_IN) return `Arrived at ${formatTime(record?.timeIn, timeZone)}.`;
-  if (status === ATTENDANCE_STATUS.CHECKED_OUT) return `Recorded leaving school at ${formatTime(record?.timeOut, timeZone)}.`;
+  if (status === ATTENDANCE_STATUS.CHECKED_OUT) return `Picked up at ${formatTime(record?.timeOut, timeZone)}.`;
+  if (status === ATTENDANCE_STATUS.ABSENT) return 'No arrival was recorded before class ended today.';
+  if (status === ATTENDANCE_STATUS.NO_CLASS) return 'There is no class today.';
   return 'No arrival has been recorded yet today.';
 }
 
 const MOMENTS = {
   arrival: {
     title: 'Arrival',
-    label: 'Time In',
+    label: 'Arrived',
     card: 'border-leaf-400',
     icon: 'bg-leaf-50 text-leaf-700',
     // Sun rising over a horizon.
@@ -55,7 +67,7 @@ const MOMENTS = {
   },
   departure: {
     title: 'Departure',
-    label: 'Time Out',
+    label: 'Picked up',
     card: 'border-grape-500',
     icon: 'bg-grape-50 text-grape-700',
     // House (going home).
@@ -64,7 +76,7 @@ const MOMENTS = {
 };
 
 /** One of the two "today" cards. Only states what was recorded; '—' when nothing was. */
-function MomentCard({ moment, time }) {
+function MomentCard({ moment, time, children }) {
   const m = MOMENTS[moment];
   return (
     <div className={`rounded-2xl border-t-4 bg-paper p-4 shadow-sm ring-1 ring-brand-100 sm:p-5 ${m.card}`}>
@@ -82,6 +94,7 @@ function MomentCard({ moment, time }) {
       <dd className="mt-3">
         <span className="block text-3xl font-bold tabular-nums text-brand-900">{time}</span>
         <span className="mt-0.5 block text-sm text-brand-500">{time === '—' ? 'Not recorded yet' : 'Recorded today'}</span>
+        {children}
       </dd>
     </div>
   );
@@ -90,7 +103,7 @@ function MomentCard({ moment, time }) {
 /** The dashboard's main card: the child's name, today's status, Arrival (Time In) and Departure (Time Out). */
 export function TodayAttendance({ child, attendance }) {
   const { loading, data, error, reload, updatedAt } = attendance;
-  const status = data?.todayStatus in STATUS_TONE ? data.todayStatus : ATTENDANCE_STATUS.ABSENT;
+  const status = data?.todayStatus in STATUS_TONE ? data.todayStatus : ATTENDANCE_STATUS.NOT_ARRIVED;
   const todayRecord = data?.records.find((r) => r.schoolDate === data.today);
   const tone = STATUS_TONE[status];
   const headingId = `today-${child.studentId}`;
@@ -138,8 +151,12 @@ export function TodayAttendance({ child, attendance }) {
               </div>
             </div>
             <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-              <MomentCard moment="arrival" time={formatTime(todayRecord?.timeIn, data.timeZone)} />
-              <MomentCard moment="departure" time={formatTime(todayRecord?.timeOut, data.timeZone)} />
+              <MomentCard moment="arrival" time={formatTime(todayRecord?.timeIn, data.timeZone)}>
+                <ArrivalBadge attendance={todayRecord} showOnTime className="mt-2" />
+              </MomentCard>
+              <MomentCard moment="departure" time={formatTime(todayRecord?.timeOut, data.timeZone)}>
+                <DepartureBadge attendance={todayRecord} className="mt-2" />
+              </MomentCard>
             </dl>
             <UpdatedNote updatedAt={updatedAt} timeZone={data.timeZone} every="minute" className="mt-3" />
           </>
@@ -207,6 +224,8 @@ export function AttendanceHistory({ studentId, attendance }) {
                   <dt className="text-brand-500">Out</dt>
                   <dd className="font-semibold tabular-nums text-brand-900">{formatTime(r.timeOut, data.timeZone)}</dd>
                 </div>
+                <ArrivalBadge attendance={r} />
+                <DepartureBadge attendance={r} />
               </dl>
             </li>
           ))}

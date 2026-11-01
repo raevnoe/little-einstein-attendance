@@ -65,11 +65,11 @@ before(async () => {
   seedAttendance(ANA, day(40), '07:45', '11:00'); // outside every range used below
 
   // Performance
-  seedEvaluation(ANA, day(1), 'language', 4, '=HYPERLINK("http://x") Reads short words.');
-  seedEvaluation(ANA, day(1), 'mathematics', 3, 'Counts to 20.');
-  seedEvaluation(ANA, day(2), 'language', 5);
-  seedEvaluation(CY, day(2), 'science', 2, 'Needs help.');
-  seedEvaluation(ANA, today, 'language', 4);
+  seedEvaluation(ANA, day(1), 'following-directions', 4, '=HYPERLINK("http://x") Reads short words.');
+  seedEvaluation(ANA, day(1), 'sharing-cooperation', 3, 'Counts to 20.');
+  seedEvaluation(ANA, day(2), 'following-directions', 5);
+  seedEvaluation(CY, day(2), 'self-control', 2, 'Needs help.');
+  seedEvaluation(ANA, today, 'following-directions', 4);
 
   // RFID cards
   api.fake.seed('rfidCards', ANA_UID, { uid: ANA_UID, studentId: ANA, active: true });
@@ -192,18 +192,24 @@ describe('report filter validation', () => {
 });
 
 describe('attendance report', () => {
-  test('per-day counts: "no time in" only on days with records; no absence totals', async () => {
+  test('per-day counts: "no time in" only on days with records; absences by the school calendar', async () => {
     const res = await attendanceReport({ from: day(3), to: day(1) });
     assert.equal(res.status, 200);
-    const [d3, d2, d1] = res.body.days;
+    // absent / noClass depend on the real weekday of these dates: checked separately below.
+    const [d3, d2, d1] = res.body.days.map(({ absent, noClass, pickedUpEarly, ...rest }) => ({ ...rest, calendar: { absent, noClass } }));
+    for (const d of [d3, d2, d1]) {
+      if (d.calendar.noClass) assert.equal(d.calendar.absent, 0);
+      delete d.calendar;
+    }
 
-    assert.deepEqual(d3, { schoolDate: day(3), attendanceRecorded: false, students: 2, timeIn: 0, timeOut: 0, noTimeOutRecorded: 0, noTimeIn: null });
+    assert.deepEqual(d3, { schoolDate: day(3), attendanceRecorded: false, students: 2, timeIn: 0, timeOut: 0, noTimeOutRecorded: 0, late: 0, lateExcused: 0, noTimeIn: null });
     // Roster on day(2): the two active students (Cy is inactive and has no record that day).
-    assert.deepEqual(d2, { schoolDate: day(2), attendanceRecorded: true, students: 2, timeIn: 2, timeOut: 1, noTimeOutRecorded: 1, noTimeIn: 0 });
+    assert.deepEqual(d2, { schoolDate: day(2), attendanceRecorded: true, students: 2, timeIn: 2, timeOut: 1, noTimeOutRecorded: 1, late: 0, lateExcused: 0, noTimeIn: 0 });
     // day(1): Ana (no time out) + Cy (inactive, but has a record) -> Ben has no time in.
-    assert.deepEqual(d1, { schoolDate: day(1), attendanceRecorded: true, students: 3, timeIn: 2, timeOut: 1, noTimeOutRecorded: 1, noTimeIn: 1 });
+    assert.deepEqual(d1, { schoolDate: day(1), attendanceRecorded: true, students: 3, timeIn: 2, timeOut: 1, noTimeOutRecorded: 1, late: 0, lateExcused: 0, noTimeIn: 1 });
 
-    assert.ok(!/absen/i.test(res.text), 'no absence status or totals');
+    // Absences come from the school calendar now: every day carries a count (0 on days with no class).
+    assert.ok(res.body.days.every((d) => Number.isInteger(d.absent)));
     assertNoPrivateData(res.text);
   });
 
@@ -250,12 +256,12 @@ describe('performance report', () => {
     const ana = res.body.students.find((s) => s.student.studentId === ANA);
     assert.equal(ana.ratings, 3);
     assert.deepEqual(ana.areas, [
-      { area: 'language', ratings: 2, starCounts: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 } },
-      { area: 'mathematics', ratings: 1, starCounts: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 } },
+      { area: 'following-directions', ratings: 2, starCounts: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 } },
+      { area: 'sharing-cooperation', ratings: 1, starCounts: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 } },
     ]);
     assert.deepEqual(ana.days.map((d) => [d.evaluationDate, d.dailyAverageStarRating]), [[day(2), 5], [day(1), 3.5]]);
     assert.deepEqual(ana.days[1].evaluations[0], {
-      area: 'language', starRating: 4, observation: '=HYPERLINK("http://x") Reads short words.', teacherName: 'Tess Test',
+      area: 'following-directions', starRating: 4, observation: '=HYPERLINK("http://x") Reads short words.', teacherName: 'Tess Test',
     });
     assert.ok(!/grade|percent|gpa/i.test(res.text));
     assert.ok(!('average' in ana) && !('averageStarRating' in ana), 'no range average');
@@ -269,9 +275,9 @@ describe('performance report', () => {
   });
 
   test('area filter: only that area, and no Daily Average (it summarizes all areas)', async () => {
-    const res = await performanceReport({ from: day(2), to: day(1), area: 'mathematics' });
+    const res = await performanceReport({ from: day(2), to: day(1), area: 'sharing-cooperation' });
     assert.deepEqual(res.body.students.map((s) => s.student.studentId), [ANA]);
-    assert.deepEqual(res.body.students[0].areas.map((a) => a.area), ['mathematics']);
+    assert.deepEqual(res.body.students[0].areas.map((a) => a.area), ['sharing-cooperation']);
     assert.equal(res.body.students[0].days[0].dailyAverageStarRating, null);
   });
 
@@ -286,10 +292,14 @@ describe('dashboard summaries', () => {
   test('today summary counts attendance, evaluations and dismissals', async () => {
     const res = await get('/reports/today');
     assert.equal(res.status, 200);
+    // Not arrived / absent / no class depend on the weekday and the time the test runs.
+    const { notArrived, absent, noClass } = res.body.attendance;
+    const calendarPart = { notArrived, absent, noClass };
+    assert.equal(notArrived + absent, noClass ? 0 : 1, 'the one student without a record');
     assert.deepEqual(res.body, {
       schoolDate: today,
       timeZone: 'Asia/Manila',
-      attendance: { students: 2, inSchool: 1, wentHome: 0, noTimeIn: 1 },
+      attendance: { students: 2, inSchool: 1, wentHome: 0, noTimeIn: 1, late: 0, pickedUpEarly: 0, ...calendarPart },
       performance: { activeStudents: 2, studentsEvaluated: 1, evaluations: 1 },
       dismissals: { total: 2, awaitingVerification: 1, verified: 0, released: 1 },
     });

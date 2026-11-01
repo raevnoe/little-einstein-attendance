@@ -158,7 +158,7 @@ export default function PerformanceReport() {
 
       {report && !invalid && (
         <div aria-busy={loading} className={`space-y-5 ${loading ? 'opacity-60' : ''}`}>
-          <ReportHeader title="Performance Evaluation Report" report={report} range={formatDateRange(report.from, report.to)}>
+          <ReportHeader title="Behavioral Evaluation Report" report={report} range={formatDateRange(report.from, report.to)}>
             <ReportActions>
               <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-brand-700">
                 <input type="checkbox" checked={showObservations} onChange={(e) => setShowObservations(e.target.checked)} className="h-5 w-5 accent-brand-600" />
@@ -176,7 +176,7 @@ export default function PerformanceReport() {
           </Alert>
 
           {report.students.length === 0 ? (
-            <EmptyState icon={<StarIcon className="h-6 w-6" />} title="No performance evaluations were recorded for these filters in this period." />
+            <EmptyState icon={<StarIcon className="h-6 w-6" />} title="No behavioral evaluations were recorded for these filters in this period." />
           ) : (
             report.students.map((entry) => (
               <StudentSection key={entry.student.studentId} entry={entry} showAverage={!report.filters.area} showObservations={showObservations} />

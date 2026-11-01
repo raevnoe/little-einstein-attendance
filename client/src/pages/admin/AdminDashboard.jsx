@@ -18,17 +18,17 @@ import { AttendanceIcon, AuditIcon, DismissalIcon, FetcherIcon, HomeIcon, Report
 const NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: HomeIcon },
   { key: 'attendance', label: 'Attendance', icon: AttendanceIcon },
-  { key: 'performance', label: 'Performance', icon: StarIcon },
+  { key: 'performance', label: 'Behavior', icon: StarIcon },
   { key: 'dismissal', label: 'Dismissal', icon: DismissalIcon },
   { key: 'reports', label: 'Reports', icon: ReportsIcon },
   { key: 'students', label: 'Students', icon: StudentsIcon },
   { key: 'rfid', label: 'RFID Cards', icon: RfidCardIcon },
-  { key: 'fetchers', label: 'Fetchers', icon: FetcherIcon },
+  { key: 'fetchers', label: 'Pick-up People', icon: FetcherIcon },
   { key: 'accounts', label: 'Accounts', icon: UserIcon },
   { key: 'audit', label: 'Audit Log', icon: AuditIcon },
   { key: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
-const TITLES = { attendance: 'Daily Attendance', performance: 'Performance Evaluation', dismissal: 'Dismissal Verification', reports: 'Reports', fetchers: 'Fetchers', accounts: 'Accounts', audit: 'Audit Log', students: 'Students', rfid: 'RFID Cards', settings: 'Settings' };
+const TITLES = { attendance: 'Daily Attendance', performance: 'Behavioral Evaluation', dismissal: 'Dismissal Verification', reports: 'Reports', fetchers: 'Pick-up People', accounts: 'Accounts', audit: 'Audit Log', students: 'Students', rfid: 'RFID Cards', settings: 'Settings' };
 
 export default function AdminDashboard({ section, onSectionChange }) {
   const { account } = useAuth();

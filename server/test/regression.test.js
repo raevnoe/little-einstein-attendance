@@ -54,7 +54,7 @@ test('RFID scan: time-in, time-out, then already-completed; arrival/departure SM
 
   assert.equal(sms.sent.length, 2);
   assert.match(sms.sent[0].message, /Ana Test has arrived/);
-  assert.match(sms.sent[1].message, /Ana Test has checked out/);
+  assert.match(sms.sent[1].message, /Ana Test was picked up/);
   assert.equal(api.fake.all('attendance').length, 1);
   assert.equal(api.fake.read('attendance', `K2026-001_${today}`).status, 'checked-out');
   assert.equal(api.fake.all('notifications').length, 2);
@@ -77,7 +77,7 @@ test('parents read only their own child’s attendance', async () => {
 });
 
 test('Performance Evaluation save, update and parent read-only view', async () => {
-  const body = { studentId: 'K2026-001', evaluationDate: today, area: 'language', starRating: 4, observation: 'Read a short story.' };
+  const body = { studentId: 'K2026-001', evaluationDate: today, area: 'following-directions', starRating: 4, observation: 'Read a short story.' };
   const created = await api.call('POST', '/performance', { token: teacher, body });
   assert.equal(created.status, 201);
   assert.equal(created.body.evaluation.teacherId, 'teacher1');

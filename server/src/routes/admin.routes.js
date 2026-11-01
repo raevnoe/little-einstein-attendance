@@ -3,7 +3,8 @@ import { ROLES } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { assignRole, createAccount, listAccounts, setAccountActive, setParentMobileNumber, setTeacherSections } from '../services/userAccount.service.js';
-import { addSection, listSections, removeSection } from '../services/section.service.js';
+import { addSection, listSections, removeSection, setSectionHours } from '../services/section.service.js';
+import { readSchoolCalendar, updateSchoolCalendar } from '../services/calendar.service.js';
 import { findUsersByRole, UID_PATTERN } from '../models/user.model.js';
 import { adminDeactivateFetcher, listAllFetchers, parseFetcherId } from '../services/fetcher.service.js';
 import { getAdminOverview } from '../services/report.service.js';
@@ -49,6 +50,16 @@ router.get('/settings', async (req, res) => {
 // fields (shared SCHOOL_SETTINGS), each validated; every changed group is audited.
 router.patch('/settings', async (req, res) => {
   res.json(await updateSchoolSettings(auditContext(req), req.body));
+});
+
+// GET /api/admin/calendar - class days: { calendar: { schoolYearStart, noClassDates: [{ date, reason }] } }.
+router.get('/calendar', async (req, res) => {
+  res.json(await readSchoolCalendar());
+});
+
+// PUT /api/admin/calendar { schoolYearStart, noClassDates } - replaces the calendar (audited).
+router.put('/calendar', async (req, res) => {
+  res.json(await updateSchoolCalendar(auditContext(req), req.body));
 });
 
 // GET /api/admin/parents - parent accounts, for linking parents to students.
@@ -114,6 +125,17 @@ router.post('/sections', async (req, res) => {
 // DELETE /api/admin/sections/:name - 409 while any student or teacher still uses it.
 router.delete('/sections/:name', async (req, res) => {
   res.json(await removeSection(auditContext(req), req.params.name));
+});
+
+// PATCH /api/admin/sections/:name  { "startTime"?: "08:00" | null, "endTime"?: "11:30" | null } - the section's own
+// class hours (late arrivals, absent cut-off, early pick-up); null = use the school default from School Settings.
+router.patch('/sections/:name', async (req, res) => {
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  const keys = Object.keys(body);
+  if (!keys.length || keys.some((key) => !['startTime', 'endTime'].includes(key))) {
+    throw new HttpError(400, 'validation/invalid-request', 'Send { "startTime": "HH:MM" } and/or { "endTime": "HH:MM" } (null = the school default).');
+  }
+  res.json(await setSectionHours(auditContext(req), req.params.name, body));
 });
 
 // PATCH /api/admin/users/:uid/mobile-number  { "mobileNumber": "09171234567" | null }

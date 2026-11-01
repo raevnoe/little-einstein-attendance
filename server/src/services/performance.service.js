@@ -34,7 +34,7 @@ const CREATE_FIELDS = ['studentId', 'evaluationDate', 'area', 'starRating', 'obs
 const UPDATE_FIELDS = ['starRating', 'observation'];
 const PARENT_HISTORY_DAYS = 30;
 
-const notFound = () => new HttpError(404, 'performance/not-found', 'This performance evaluation could not be found.');
+const notFound = () => new HttpError(404, 'performance/not-found', 'This behavioral evaluation could not be found.');
 const studentNotFound = () => new HttpError(404, 'students/not-found', 'This student could not be found.');
 const studentInactive = () => new HttpError(409, 'students/inactive', 'This student is inactive and cannot be evaluated.');
 const invalid = (fields) => new HttpError(400, 'validation/invalid-performance', 'Please correct the highlighted fields.', { fields });
@@ -69,7 +69,7 @@ function parseQueryDate(value) {
 /** Parses a performance ID from a URL; 400 if malformed. */
 export function parsePerformanceId(value) {
   const parts = parsePerformanceDocId(value);
-  if (!parts) throw new HttpError(400, 'validation/invalid-performance-id', 'Invalid performance evaluation ID.');
+  if (!parts) throw new HttpError(400, 'validation/invalid-performance-id', 'Invalid behavioral evaluation ID.');
   return performanceDocId(parts.studentId, parts.evaluationDate, parts.area);
 }
 

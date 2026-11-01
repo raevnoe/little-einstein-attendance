@@ -56,3 +56,23 @@ export function maskMobileNumber(number) {
   const match = /^\+63(\d{3})\d{3}(\d{4})$/.exec(number ?? '');
   return match ? `+63 ${match[1]} ••• ${match[2]}` : null;
 }
+
+/** 22 -> "22 min", 60 -> "1 hour", 75 -> "1 hour 15 min", 130 -> "2 hours 10 min". */
+export function durationText(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const hours = h ? `${h} hour${h === 1 ? '' : 's'}` : '';
+  return [hours, m || !h ? `${m} min` : ''].filter(Boolean).join(' ');
+}
+
+/** "22 min late", "1 hour 15 min late"; just "Late" when the minutes are unknown or under one. */
+export function lateText(minutes) {
+  if (!Number.isFinite(minutes) || minutes < 1) return 'Late';
+  return `${durationText(minutes)} late`;
+}
+
+/** "Picked up 30 min early", "Picked up 1 hour early"; "Picked up early" when unknown or under one. */
+export function earlyText(minutes) {
+  if (!Number.isFinite(minutes) || minutes < 1) return 'Picked up early';
+  return `Picked up ${durationText(minutes)} early`;
+}

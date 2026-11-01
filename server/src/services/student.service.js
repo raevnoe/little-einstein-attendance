@@ -15,6 +15,7 @@ import {
   findStudentsByParent,
   newStudentDocument,
   normalizeStudentId,
+  samePersonKey,
   studentsCollection,
   toChildView,
   toStudentDetail,
@@ -95,6 +96,16 @@ export async function getStudent(studentId, { includeContact = false, scope = AL
 }
 
 /** `ctx` = auditContext(req) of the admin. */
+/** 409 when another student already has this first name, last name and birthday (a double entry). */
+async function assertNotDuplicatePerson(student, ownId = null) {
+  const key = samePersonKey(student);
+  const twin = (await findAllStudents()).find((s) => s.studentId !== ownId && samePersonKey(s) === key);
+  if (twin) {
+    const message = `A student with this name and birthday already exists (${twin.studentId}).`;
+    throw new HttpError(409, 'students/duplicate-person', message, { fields: { firstName: message } });
+  }
+}
+
 export async function createStudent(ctx, input) {
   const body = input && typeof input === 'object' ? input : {};
   const studentId = normalizeStudentId(body.studentId);
@@ -108,6 +119,7 @@ export async function createStudent(ctx, input) {
     else data.section = section.value;
   }
   if (Object.keys(errors).length) throw invalid(errors);
+  await assertNotDuplicatePerson(data);
 
   await assertParentAccounts(data.parentIds);
 
@@ -154,6 +166,11 @@ export async function updateStudent(ctx, studentId, input) {
   if (Object.keys(errors).length) throw invalid(errors);
   if (Object.keys(data).length === 0) {
     throw new HttpError(400, 'validation/empty-update', 'No changes were provided.');
+  }
+  if (['firstName', 'lastName', 'dateOfBirth'].some((k) => k in data)) {
+    const current = await findStudentById(studentId);
+    if (!current) throw STUDENT_NOT_FOUND();
+    await assertNotDuplicatePerson({ ...current, ...data }, studentId);
   }
 
   await assertParentAccounts(data.parentIds);

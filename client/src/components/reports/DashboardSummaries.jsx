@@ -53,7 +53,7 @@ function RefreshButton({ onClick, disabled }) {
 
 const QUICK_ACTIONS = [
   { key: 'attendance', label: 'Attendance', icon: AttendanceIcon },
-  { key: 'performance', label: 'Performance', icon: StarIcon },
+  { key: 'performance', label: 'Behavior', icon: StarIcon },
   { key: 'dismissal', label: 'Dismissal', icon: DismissalIcon },
 ];
 
@@ -67,7 +67,7 @@ export function TeacherSectionsNote({ account }) {
   if (sections.length === 0) {
     return (
       <Alert tone="warning" title="No section assigned yet">
-        You will see students, attendance, Performance Evaluations, dismissals and reports once an administrator assigns
+        You will see students, attendance, Behavioral Evaluations, dismissals and reports once an administrator assigns
         your section(s) under Accounts.
       </Alert>
     );
@@ -137,12 +137,14 @@ export function TodaySummary({ onNavigate }) {
         <div className="mt-5 space-y-4">
           <Group id="today-attendance" title="Daily Attendance" icon={AttendanceIcon} tone="leaf" action={<OpenButton onClick={() => onNavigate('attendance')}>Open Attendance</OpenButton>}>
             <StatCard label="In school" value={data.attendance.inSchool} tone="good" />
-            <StatCard label="Went home" value={data.attendance.wentHome} />
-            <StatCard label="No time in" value={data.attendance.noTimeIn} />
+            <StatCard label="Picked up" value={data.attendance.wentHome} />
+            <StatCard label="Late" value={data.attendance.late ?? 0} tone={data.attendance.late ? 'attention' : 'neutral'} />
+            <StatCard label="Not arrived" value={data.attendance.notArrived ?? data.attendance.noTimeIn} />
+            <StatCard label="Absent" value={data.attendance.absent ?? 0} tone={data.attendance.absent ? 'attention' : 'neutral'} hint={data.attendance.noClass ? `No class: ${data.attendance.noClass}` : undefined} />
             <StatCard label="Students" value={data.attendance.students} />
           </Group>
 
-          <Group id="today-performance" title="Performance Evaluation" icon={StarIcon} tone="sun" action={<OpenButton onClick={() => onNavigate('performance')}>Open Performance</OpenButton>}>
+          <Group id="today-performance" title="Behavioral Evaluation" icon={StarIcon} tone="sun" action={<OpenButton onClick={() => onNavigate('performance')}>Open Performance</OpenButton>}>
             <StatCard
               label="Students evaluated today"
               value={data.performance.studentsEvaluated}
@@ -162,7 +164,7 @@ export function TodaySummary({ onNavigate }) {
               value={data.dismissals.verified}
               tone={data.dismissals.verified ? 'attention' : 'neutral'}
             />
-            <StatCard label="Released to a Fetcher" value={data.dismissals.released} />
+            <StatCard label="Released to a pick-up person" value={data.dismissals.released} />
             <StatCard label="Dismissal requests" value={data.dismissals.total} />
           </Group>
 

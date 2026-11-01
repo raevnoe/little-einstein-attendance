@@ -32,10 +32,10 @@ describe('scan result card (describeScanResult)', () => {
   it('time in: title, student name, recorded time, success message', async () => {
     const card = await describeFor(scanOk(SCAN_OUTCOMES.TIME_IN, { timeIn: TIME_IN, timeOut: null }));
     assert.equal(card.kind, FEEDBACK_KINDS.SUCCESS);
-    assert.equal(card.title, 'Time In Recorded');
+    assert.equal(card.title, 'Arrival Recorded');
     assert.equal(card.studentName, 'Eithan Mendoza');
     assert.equal(card.times.length, 1);
-    assert.equal(card.times[0].label, 'Time In');
+    assert.equal(card.times[0].label, 'Arrived');
     assert.match(card.times[0].value, /^7:42\s?AM$/i);
     assert.equal(card.message, 'Attendance recorded successfully.');
   });
@@ -43,8 +43,8 @@ describe('scan result card (describeScanResult)', () => {
   it('time out: shows the time out, not the time in', async () => {
     const card = await describeFor(scanOk(SCAN_OUTCOMES.TIME_OUT, { timeIn: TIME_IN, timeOut: TIME_OUT }));
     assert.equal(card.kind, FEEDBACK_KINDS.SUCCESS);
-    assert.equal(card.title, 'Time Out Recorded');
-    assert.deepEqual(card.times.map((t) => t.label), ['Time Out']);
+    assert.equal(card.title, 'Pick-up Recorded');
+    assert.deepEqual(card.times.map((t) => t.label), ['Picked up']);
     assert.match(card.times[0].value, /^3:05\s?PM$/i);
   });
 
@@ -55,7 +55,7 @@ describe('scan result card (describeScanResult)', () => {
     assert.equal(card.studentName, 'Eithan Mendoza');
     assert.equal(card.message, 'Eithan Mendoza was scanned moments ago.');
     assert.equal(card.nextStep, 'No action needed.');
-    assert.deepEqual(card.times.map((t) => t.label), ['Time In']);
+    assert.deepEqual(card.times.map((t) => t.label), ['Arrived']);
   });
 
   it('day already complete (409): name and both times from the error details', async () => {
@@ -68,7 +68,7 @@ describe('scan result card (describeScanResult)', () => {
     assert.equal(card.kind, FEEDBACK_KINDS.INFO);
     assert.equal(card.title, 'Attendance Already Complete');
     assert.equal(card.studentName, 'Eithan Mendoza');
-    assert.deepEqual(card.times.map((t) => t.label), ['Time In', 'Time Out']);
+    assert.deepEqual(card.times.map((t) => t.label), ['Arrived', 'Picked up']);
   });
 
   it('unknown / unassigned / inactive card: warning, clearly different from success, no student', async () => {

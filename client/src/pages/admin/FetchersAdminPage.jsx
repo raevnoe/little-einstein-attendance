@@ -41,7 +41,7 @@ function FetcherRow({ fetcher, onChanged }) {
       </div>
 
       <div className="mt-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">May collect</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Can pick up</p>
         <ul className="mt-1.5 flex flex-wrap gap-2">
           {fetcher.students.map((s) => {
             const invalid = !s.active || !s.parentLinked;
@@ -89,9 +89,9 @@ export default function FetchersAdminPage() {
 
   return (
     <Panel
-      title="Registered Fetchers"
+      title="Registered pick-up people"
       titleId="admin-fetchers-title"
-      subtitle="People parents have authorized to pick up their children. Fetchers have no account."
+      subtitle="People parents have authorized to pick up their children. They have no account."
       actions={(
         <div className="flex flex-wrap items-end gap-2">
           <div>
@@ -110,9 +110,9 @@ export default function FetchersAdminPage() {
       )}
     >
       {error && <ErrorMessage message={error} onRetry={reload} />}
-      {loading && <LoadingState className="mt-4">Loading Fetchers…</LoadingState>}
+      {loading && <LoadingState className="mt-4">Loading pick-up people…</LoadingState>}
       {data && fetchers.length === 0 && (
-        <EmptyState className="mt-4" icon={<FetcherIcon className="h-6 w-6" />} title="No Fetchers found." />
+        <EmptyState className="mt-4" icon={<FetcherIcon className="h-6 w-6" />} title="No pick-up people found." />
       )}
       {fetchers.length > 0 && (
         <ul className="mt-5 grid gap-4 md:grid-cols-2">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SCHOOL_SETTINGS } from '@led/shared';
+import { SCHOOL_SETTINGS, formatTimeOfDay } from '@led/shared';
 import { apiRequest } from '../../lib/apiClient.js';
 import { useApiData } from '../../lib/useApiData.js';
 import { ErrorMessage } from '../Panel.jsx';
@@ -104,6 +104,18 @@ function SettingsEditor({ initial }) {
                     {spec.hint && <p id={`${id}-hint`} className="ml-8 mt-1 text-sm text-brand-500">{spec.hint}</p>}
                     {error && <p className="ml-8 mt-1 text-sm font-medium text-red-700">{error}</p>}
                   </div>
+                );
+              }
+              if (spec.type === 'time') {
+                return (
+                  <Field key={key} id={id} label={spec.label} hint={[`Default ${formatTimeOfDay(spec.default)}.`, spec.hint].filter(Boolean).join(' ')} error={error}>
+                    <input
+                      type="time"
+                      value={form[group][key]}
+                      onChange={(e) => set(group, key, e.target.value)}
+                      className={inputClass({ invalid: Boolean(error), className: 'sm:max-w-40' })}
+                    />
+                  </Field>
                 );
               }
               return (

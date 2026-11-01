@@ -173,6 +173,8 @@ and match that role.
 | GET    | `/api/account`                     | admin, teacher, parent | Own profile (+ SMS options for parents)        |
 | PATCH  | `/api/account/preferences`         | parent             | Own arrival/departure SMS on/off `{ attendanceSms }` |
 | POST   | `/api/account/sign-out-everywhere` | admin, teacher, parent | End every session of the own account          |
+| PATCH  | `/api/admin/sections/:name`       | admin              | A section's own class start time `{ startTime }` (null = school default) |
+| PATCH  | `/api/attendance/:id/late`         | admin, teacher     | Excuse a late arrival `{ excused, reason }` (audited) |
 
 RFID UIDs are normalized (whitespace, `:` and `-` removed, uppercased) and must be 4–64 hex
 characters. A student has at most one card; every assignment change runs in a Firestore
@@ -189,7 +191,11 @@ first scan = time in, next scan after the debounce = time out, later scans chang
 Unknown, inactive, or unassigned cards and inactive students never create attendance.
 
 The RFID debounce (default 10 s) is read from the Firestore document `systemSettings/attendance`
-field `rfidDebounceSeconds` (integer 0–300; missing/invalid = default; cached for 30 s). Admins change it
+field `rfidDebounceSeconds` (integer 0–300; missing/invalid = default; cached for 30 s).
+
+Late arrivals: a time-in later than the class start time (the section's own, else the school default
+`classStartTime`, 08:00) plus the grace period (`lateGraceMinutes`, 15) is stored as **late** with the minutes
+late. Teachers and admins can excuse a late arrival with a reason. Older records have no arrival status. Admins change it
 (and the dismissal and SMS settings) on **Settings → School settings**.
 
 `POST /api/attendance/scan` receives a card UID from the staff Attendance page and calls `processRfidScan()`.

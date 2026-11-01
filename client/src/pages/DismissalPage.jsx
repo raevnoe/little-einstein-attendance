@@ -219,7 +219,7 @@ function DismissalCard({ item, timeZone, isToday, onChanged }) {
       </div>
       <StepIndicator status={item.status} />
       <dl className="mt-4 grid gap-x-6 gap-y-2 text-sm text-brand-700 sm:grid-cols-2">
-        <Detail icon={UserIcon} label="Fetcher">{item.fetcher.fullName} ({item.fetcher.relationship})</Detail>
+        <Detail icon={UserIcon} label="Pick-up person">{item.fetcher.fullName} ({item.fetcher.relationship})</Detail>
         <Detail icon={ClockIcon} label="Requested by">{item.parentName ?? 'Parent'} at {time(item.requestedAt)}</Detail>
         {item.status === DISMISSAL_STATUS.AWAITING_VERIFICATION && (
           <Detail icon={ClockIcon} label="Code expires">{time(item.otpExpiresAt)} · {item.attemptsRemaining} attempts left</Detail>
@@ -260,7 +260,7 @@ export default function DismissalPage({ allowDate = false }) {
     <Panel
       title={data ? formatDayDate(data.schoolDate, { long: true }) : 'Dismissal Verification'}
       titleId="dismissal-title"
-      subtitle="A parent requests a code for their Fetcher. Verify the code, then confirm the handover."
+      subtitle="A parent requests a code for their pick-up person. Verify the code, then confirm the handover."
       actions={(
         <div className="flex flex-wrap items-end gap-2">
           {allowDate && (

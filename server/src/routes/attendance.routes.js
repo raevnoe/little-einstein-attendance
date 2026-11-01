@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ROLES, SCAN_METHODS, SCAN_OUTCOMES, SCAN_SOURCE_BY_METHOD } from '@led/shared';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { getDailyAttendance, processRfidScan } from '../services/attendance.service.js';
+import { getDailyAttendance, processRfidScan, setLateExcuse } from '../services/attendance.service.js';
 import { auditContext } from '../services/audit.service.js';
 import { HttpError } from '../utils/httpError.js';
 import { scopeFor } from '../utils/sectionScope.js';
@@ -54,6 +54,12 @@ router.post('/scan', async (req, res) => {
   const status = HTTP_STATUS_BY_OUTCOME[scan.outcome] ?? 500;
   if (status >= 400) throw new HttpError(status, `attendance/${scan.outcome}`, scan.message, { scan });
   res.status(status).json({ scan });
+});
+
+// PATCH /api/attendance/:attendanceId/late  { "excused": true, "reason": "..." } | { "excused": false }
+// Excuses a late arrival (or removes the excuse). Teachers: students in their sections only.
+router.patch('/:attendanceId/late', async (req, res) => {
+  res.json(await setLateExcuse(auditContext(req), req.params.attendanceId, req.body, { scope: scopeFor(req) }));
 });
 
 export default router;

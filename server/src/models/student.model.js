@@ -2,16 +2,17 @@
 // (e.g. K2026-001), so Firestore itself guarantees uniqueness: create() fails if
 // the ID already exists. Student IDs are therefore permanent (not editable).
 // The Student ID is NOT the RFID UID; RFID cards are a separate collection (Phase 5).
-import { COLLECTIONS, GENDERS, MAX_PARENTS_PER_STUDENT, STUDENT_ID_PATTERN } from '@led/shared';
+import { COLLECTIONS, GENDERS, MAX_PARENTS_PER_STUDENT, STUDENT_ID_PATTERN, validatePersonName } from '@led/shared';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { UID_PATTERN } from './user.model.js';
 
 export const studentsCollection = () => db.collection(COLLECTIONS.STUDENTS);
 
-const NAME_PATTERN = /^\p{L}[\p{L} .'-]*$/u;
 const SECTION_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} .'-]*$/u;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+// Kindergarten: a child is at least 2 and at most 12 years old on the day they are added or edited.
+const MIN_CHILD_AGE_YEARS = 2;
 const MAX_CHILD_AGE_YEARS = 12;
 
 // Fields an admin may set. studentId is set once at creation; active has its own endpoints.
@@ -29,13 +30,8 @@ function cleanText(value) {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
 }
 
-function validateName(value, { required, label }) {
-  const name = cleanText(value);
-  if (!name) return required ? { error: `${label} is required.` } : { value: '' };
-  if (name.length > 60) return { error: `${label} must be 60 characters or fewer.` };
-  if (!NAME_PATTERN.test(name)) return { error: `${label} may only contain letters, spaces, periods, apostrophes and hyphens.` };
-  return { value: name };
-}
+// Names: letters only (no numbers or symbols), shared with accounts and pick-up people.
+const validateName = (value, options) => validatePersonName(value, options);
 
 function validateDateOfBirth(value) {
   const text = typeof value === 'string' ? value.trim() : '';
@@ -49,6 +45,8 @@ function validateDateOfBirth(value) {
   const oldest = new Date(Date.UTC(today.getUTCFullYear() - MAX_CHILD_AGE_YEARS, today.getUTCMonth(), today.getUTCDate()));
   if (date > today) return { error: 'Date of birth cannot be in the future.' };
   if (date < oldest) return { error: `Date of birth must be within the last ${MAX_CHILD_AGE_YEARS} years.` };
+  const youngest = new Date(Date.UTC(today.getUTCFullYear() - MIN_CHILD_AGE_YEARS, today.getUTCMonth(), today.getUTCDate()));
+  if (date > youngest) return { error: `A kindergarten student must be at least ${MIN_CHILD_AGE_YEARS} years old.` };
   return { value: text };
 }
 
@@ -96,6 +94,9 @@ export function validateStudentFields(input, { partial = false } = {}) {
   }
   return { data, errors };
 }
+
+/** Same child twice? First + last name + birthday, ignoring case and spaces. */
+export const samePersonKey = (s) => [s.firstName, s.lastName, s.dateOfBirth].map((v) => String(v ?? '').toLowerCase().replace(/\s+/g, ' ').trim()).join('|');
 
 /** The document for a new student (always active). */
 export function newStudentDocument(studentId, data) {

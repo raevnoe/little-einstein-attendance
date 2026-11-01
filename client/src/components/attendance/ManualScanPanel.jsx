@@ -54,7 +54,7 @@ export default function ManualScanPanel({ onScanned }) {
       <form id="manual-uid-panel" hidden={!open} onSubmit={handleSubmit} className="border-t border-brand-100 px-4 pb-5 pt-4 sm:px-6" noValidate>
         <p className="text-sm text-brand-500">
           Use this when the UHF RFID reader is not available or a card cannot be read. Type a registered card UID to
-          record time in / time out exactly as a real scan would.
+          record arrival / pick-up exactly as a real scan would.
         </p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <Field id="manual-uid" label="RFID card UID" className="min-w-64 flex-1">

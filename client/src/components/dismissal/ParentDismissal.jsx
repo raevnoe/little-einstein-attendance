@@ -11,19 +11,19 @@ import { Badge, EmptyState, InitialsAvatar, InlineConfirm, LoadingState, buttonC
 import { FetcherIcon, InfoIcon, LockIcon, PencilIcon, PhoneIcon, PlusIcon, RefreshIcon } from '../ui/icons.jsx';
 
 const STATUS_HINT = {
-  [DISMISSAL_STATUS.AWAITING_VERIFICATION]: 'The code was sent to your phone by SMS. Give it only to the Fetcher; the teacher will ask for it.',
+  [DISMISSAL_STATUS.AWAITING_VERIFICATION]: 'The code was sent to your phone by SMS. Give it only to your pick-up person; the teacher will ask for it.',
   [DISMISSAL_STATUS.VERIFIED]: 'The teacher has checked the code. Your child is being handed over.',
-  [DISMISSAL_STATUS.RELEASED]: 'Your child has been released to the Fetcher.',
+  [DISMISSAL_STATUS.RELEASED]: 'Your child has been released to the pick-up person.',
   [DISMISSAL_STATUS.EXPIRED]: 'The code has expired. You can request a new one.',
   [DISMISSAL_STATUS.LOCKED]: 'Too many incorrect codes were entered. You can request a new code.',
   [DISMISSAL_STATUS.SMS_FAILED]: 'The SMS could not be sent, so no code is active. Please try again.',
-  [DISMISSAL_STATUS.CANCELLED]: 'This request was cancelled because the Fetcher is no longer authorized.',
+  [DISMISSAL_STATUS.CANCELLED]: 'This request was cancelled because the pick-up person is no longer authorized.',
   [DISMISSAL_STATUS.SENDING]: 'Sending the code…',
 };
 
 const STEPS = [
   { title: 'Send a code', text: 'It goes by SMS to your registered mobile number.', tone: 'bg-sky-500' },
-  { title: 'Give it to your Fetcher', text: 'Share it only with the person picking up your child.', tone: 'bg-grape-500' },
+  { title: 'Give it to your pick-up person', text: 'Share it only with the person picking up your child.', tone: 'bg-grape-500' },
   { title: 'Teacher checks it', text: 'Your child is released after the code is verified.', tone: 'bg-leaf-400' },
 ];
 
@@ -87,7 +87,7 @@ function ChildDismissal({ child, fetchers, dismissal, timeZone, onChanged }) {
       {dismissal && (
         <div className="mt-4 rounded-xl bg-canvas p-3 text-sm">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-            <dt className="text-brand-500">Fetcher</dt>
+            <dt className="text-brand-500">Pick-up person</dt>
             <dd className="text-brand-900"><strong>{dismissal.fetcher.fullName}</strong> ({dismissal.fetcher.relationship})</dd>
             {dismissal.requestedAt && (
               <>
@@ -126,7 +126,7 @@ function ChildDismissal({ child, fetchers, dismissal, timeZone, onChanged }) {
         eligible.length === 0 ? (
           <p className="mt-3 flex gap-2 rounded-xl border border-dashed border-brand-200 px-3 py-2.5 text-sm text-brand-700">
             <FetcherIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" />
-            Add a Fetcher for {child.firstName} below to request a dismissal code.
+            Add a pick-up person for {child.firstName} below to request a dismissal code.
           </p>
         ) : (
           <div className="mt-4 flex flex-wrap items-end gap-2">
@@ -189,7 +189,7 @@ function FetcherRow({ fetcher, options, onChanged }) {
       </div>
       {names.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-wide text-brand-500">May collect</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-brand-500">Can pick up</span>
           {names.map(({ id, name }) => (
             <span key={id} className="rounded-full bg-leaf-50 px-2.5 py-0.5 font-medium text-leaf-700 ring-1 ring-inset ring-leaf-100">{name}</span>
           ))}
@@ -246,7 +246,7 @@ export default function ParentDismissal({ options }) {
       <Panel
         title="Dismissal Verification"
         titleId="parent-dismissal-title"
-        subtitle="Can’t pick up your child today? Send a one-time code to your phone and give it to your Fetcher."
+        subtitle="Can’t pick up your child today? Send a one-time code to your phone and give it to your pick-up person."
         script
         accent="sky"
         actions={(
@@ -277,28 +277,28 @@ export default function ParentDismissal({ options }) {
         )}
         <p className="mt-5 flex gap-2 rounded-xl bg-sun-50 px-3 py-2.5 text-sm text-sun-700">
           <LockIcon className="mt-0.5 h-4 w-4 shrink-0" />
-          Never share the code with anyone except the Fetcher. School staff will never ask you for it by phone.
+          Never share the code with anyone except your pick-up person. School staff will never ask you for it by phone.
         </p>
       </Panel>
 
       <Panel
-        title="My Fetchers"
+        title="My pick-up people"
         titleId="parent-fetchers-title"
-        subtitle="People you allow to pick up your child. Fetchers do not need an account."
+        subtitle="People you allow to pick up your child. They do not need an account."
         script
         accent="grape"
         actions={!adding && (
           <button type="button" onClick={() => setAdding(true)} className={buttonClass({ variant: 'secondary' })}>
             <PlusIcon className="h-4 w-4" />
-            Add Fetcher
+            Add pick-up person
           </button>
         )}
       >
         <div className="mt-5 space-y-3">
           {adding && <FetcherForm options={options} onSaved={fetchersChanged} onCancel={() => setAdding(false)} />}
-          {fetcherData.loading && <LoadingState>Loading Fetchers…</LoadingState>}
+          {fetcherData.loading && <LoadingState>Loading pick-up people…</LoadingState>}
           {fetcherData.data && fetchers.length === 0 && !adding && (
-            <EmptyState icon={<FetcherIcon className="h-6 w-6" />} title="You have not added any Fetchers yet.">
+            <EmptyState icon={<FetcherIcon className="h-6 w-6" />} title="You have not added any pick-up people yet.">
               Add a family member or trusted adult who may pick up your child.
             </EmptyState>
           )}
@@ -310,7 +310,7 @@ export default function ParentDismissal({ options }) {
           {inactive.length > 0 && (
             <details className="rounded-2xl bg-canvas p-3 ring-1 ring-brand-100">
               <summary className="min-h-11 cursor-pointer content-center rounded-lg px-1 text-sm font-semibold text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-                Deactivated Fetchers ({inactive.length})
+                Deactivated pick-up people ({inactive.length})
               </summary>
               <ul className="mt-2 space-y-2">
                 {inactive.map((f) => <FetcherRow key={f.fetcherId} fetcher={f} options={options} onChanged={fetchersChanged} />)}

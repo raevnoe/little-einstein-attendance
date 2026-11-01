@@ -8,8 +8,7 @@
 //     average is the existing per-day Daily Average Star Rating.
 // Responses use explicit field lists: no RFID UIDs, scan sources, parent IDs, phone numbers,
 // SMS text, or dismissal codes/hashes.
-import {
-  ATTENDANCE_STATUS,
+import { ARRIVAL_STATUS, ATTENDANCE_STATUS, DEPARTURE_STATUS, noClassReason,
   DISMISSAL_STATUS,
   MAX_REPORT_RANGE_DAYS,
   MAX_STAR_RATING,
@@ -27,6 +26,7 @@ import { findNotificationStatusesSince, NOTIFICATION_STATUS } from '../models/no
 import { findPerformanceInRange, findPerformanceWhere } from '../models/performance.model.js';
 import { cardStatus, findAllCards } from '../models/rfidCard.model.js';
 import { findAllStudents, normalizeStudentId } from '../models/student.model.js';
+import { noRecordContext, statusWithoutRecord } from './attendance.service.js';
 import { ALL_SECTIONS, studentInScope } from '../utils/sectionScope.js';
 
 /** The students a staff member may report on (teachers: their sections) and a record filter. */
@@ -144,7 +144,7 @@ export async function getAttendanceReport(query, { scope = ALL_SECTIONS } = {}) 
   const { from, to, dates } = parseDateRange(q, today);
   const filters = { studentId: parseStudentFilter(q.studentId), section: parseSectionFilter(q.section) };
 
-  const [everyStudent, schoolRecords] = await Promise.all([findAllStudents(), findAttendanceInRange(from, to)]);
+  const [everyStudent, schoolRecords, ctx] = await Promise.all([findAllStudents(), findAttendanceInRange(from, to), noRecordContext()]);
   // Dates on which ANY student (whatever the filters) has a record: the school was taking attendance.
   const datesWithRecords = new Set(schoolRecords.map((r) => r.schoolDate));
   const { students: allStudents, mine } = scoped(everyStudent, scope);
@@ -164,12 +164,24 @@ export async function getAttendanceReport(query, { scope = ALL_SECTIONS } = {}) 
       status: reportStatusOf(r),
       timeIn: iso(r.timeIn),
       timeOut: iso(r.timeOut),
+      arrivalStatus: r.arrivalStatus ?? null, // null = recorded before late arrivals were tracked
+      lateMinutes: r.lateMinutes ?? null,
+      departureStatus: r.departureStatus ?? null, // null = before early pick-ups were tracked
+      earlyMinutes: r.earlyMinutes ?? null,
     }));
+    // Class days in the period with no arrival, by the school calendar and the class end time.
+    const recordDates = new Set(rows.map((r) => r.schoolDate));
+    const absentDates = s.active ? dates.filter((d) => !recordDates.has(d) && statusWithoutRecord(s, d, ctx) === ATTENDANCE_STATUS.ABSENT) : [];
     return {
       student: reportStudent(s),
       daysWithTimeIn: rows.length,
       daysWithTimeOut: rows.filter((r) => r.status === REPORT_ATTENDANCE_STATUS.TIME_OUT_RECORDED).length,
       daysNoTimeOutRecorded: rows.filter((r) => r.status === REPORT_ATTENDANCE_STATUS.NO_TIME_OUT_RECORDED).length,
+      daysLate: rows.filter((r) => r.arrivalStatus === ARRIVAL_STATUS.LATE).length,
+      daysLateExcused: rows.filter((r) => r.arrivalStatus === ARRIVAL_STATUS.EXCUSED).length,
+      daysPickedUpEarly: rows.filter((r) => r.departureStatus === DEPARTURE_STATUS.EARLY).length,
+      daysAbsent: absentDates.length,
+      absentDates,
       records: rows,
     };
   });
@@ -187,8 +199,14 @@ export async function getAttendanceReport(query, { scope = ALL_SECTIONS } = {}) 
       timeIn: withTimeIn.length,
       timeOut: withTimeIn.filter((r) => r.status === REPORT_ATTENDANCE_STATUS.TIME_OUT_RECORDED).length,
       noTimeOutRecorded: withTimeIn.filter((r) => r.status === REPORT_ATTENDANCE_STATUS.NO_TIME_OUT_RECORDED).length,
+      late: withTimeIn.filter((r) => r.arrivalStatus === ARRIVAL_STATUS.LATE).length,
+      lateExcused: withTimeIn.filter((r) => r.arrivalStatus === ARRIVAL_STATUS.EXCUSED).length,
+      pickedUpEarly: withTimeIn.filter((r) => r.departureStatus === DEPARTURE_STATUS.EARLY).length,
       // null (not 0, not "absent") when nobody in the school has a record that day.
       noTimeIn: recorded ? roster.length - withTimeIn.length : null,
+      // From the school calendar: null on a day with no class (weekend, holiday, before the school year).
+      noClass: noClassReason(schoolDate, ctx.calendar),
+      absent: studentRows.filter((s) => s.absentDates.includes(schoolDate)).length,
     };
   });
 
@@ -208,7 +226,7 @@ export async function getAttendanceReport(query, { scope = ALL_SECTIONS } = {}) 
 
 function parseAreaFilter(value) {
   if (value === undefined) return null;
-  if (!PERFORMANCE_AREA_KEYS.includes(value)) throw badRequest('validation/invalid-area', 'Invalid performance area.');
+  if (!PERFORMANCE_AREA_KEYS.includes(value)) throw badRequest('validation/invalid-area', 'Invalid behavior area.');
   return value;
 }
 
@@ -313,11 +331,12 @@ function countBy(items, keyOf) {
 export async function getTodaySummary({ scope = ALL_SECTIONS } = {}) {
   const today = schoolDateOf();
   const nowMs = Date.now();
-  const [everyStudent, schoolAttendance, schoolEvaluations, schoolDismissals] = await Promise.all([
+  const [everyStudent, schoolAttendance, schoolEvaluations, schoolDismissals, ctx] = await Promise.all([
     findAllStudents(),
     findAttendanceByDate(today),
     findPerformanceWhere('evaluationDate', today),
     findDismissalsByDate(today),
+    noRecordContext(),
   ]);
   // Teachers: only their sections' students and their records.
   const { students, mine } = scoped(everyStudent, scope);
@@ -329,6 +348,8 @@ export async function getTodaySummary({ scope = ALL_SECTIONS } = {}) {
   // Same roster rule as the Daily Attendance page: active students plus anyone with a record.
   const rosterSize = new Set([...active, ...withRecord]).size;
   const checkedIn = attendance.filter((r) => (r.status ?? ATTENDANCE_STATUS.CHECKED_IN) === ATTENDANCE_STATUS.CHECKED_IN).length;
+  // Active students with no record today: absent (after their class end time) or not arrived yet.
+  const withoutRecord = students.filter((s) => s.active === true && !withRecord.has(s.studentId)).map((s) => statusWithoutRecord(s, today, ctx));
   const dismissalCounts = countBy(dismissals, (r) => effectiveDismissalStatus(r, nowMs));
 
   return {
@@ -339,6 +360,11 @@ export async function getTodaySummary({ scope = ALL_SECTIONS } = {}) {
       inSchool: checkedIn,
       wentHome: attendance.length - checkedIn,
       noTimeIn: rosterSize - attendance.length,
+      late: attendance.filter((r) => r.arrivalStatus === ARRIVAL_STATUS.LATE).length,
+      pickedUpEarly: attendance.filter((r) => r.departureStatus === DEPARTURE_STATUS.EARLY).length,
+      notArrived: withoutRecord.filter((st) => st === ATTENDANCE_STATUS.NOT_ARRIVED).length,
+      absent: withoutRecord.filter((st) => st === ATTENDANCE_STATUS.ABSENT).length,
+      noClass: noClassReason(today, ctx.calendar),
     },
     performance: {
       activeStudents: active.size,

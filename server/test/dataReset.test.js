@@ -34,7 +34,7 @@ before(async () => {
   api.addStudent({ studentId: 'K2026-901', parentIds: [uids['test.parent@example.com']] });
   api.fake.seed('rfidCards', 'E200001', { uid: 'E200001', studentId: 'K2026-901', active: true });
   api.fake.seed('attendance', 'K2026-901_2026-10-20', { studentId: 'K2026-901', schoolDate: '2026-10-20' });
-  api.fake.seed('performance', 'K2026-901_2026-10-20_language', { studentId: 'K2026-901', starRating: 4 });
+  api.fake.seed('performance', 'K2026-901_2026-10-20_following-directions', { studentId: 'K2026-901', starRating: 4 });
   api.fake.seed('fetchers', 'f1', { parentId: uids['test.parent@example.com'], fullName: 'Rosa' });
   api.fake.seed('dismissalRecords', 'K2026-901_2026-10-20', { studentId: 'K2026-901', status: 'released' });
   api.fake.seed('notifications', 'n1', { status: 'sent' });

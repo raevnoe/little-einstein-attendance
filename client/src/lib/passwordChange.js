@@ -3,15 +3,21 @@
 // through the API. Firebase then ends this account's sessions on other devices; this one stays signed in.
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth, firebaseConfigError } from './firebase.js';
+import { passwordProblems } from '@led/shared';
 import { OFFLINE_MESSAGE } from './format.js';
 
-export const MIN_PASSWORD_LENGTH = 8;
+/** "Still needed: a number, a special character." (shared password rules), or null. */
+export function newPasswordError(password, context) {
+  const problems = passwordProblems(password, context);
+  return problems.length ? `Still needed: ${problems.map((p) => p.charAt(0).toLowerCase() + p.slice(1)).join(', ')}.` : null;
+}
 
-/** Field errors for the form, or null when it can be sent. */
-export function validatePasswordChange({ current, next, confirm }) {
+/** Field errors for the form, or null when it can be sent. `context` = { email, names } of the person. */
+export function validatePasswordChange({ current, next, confirm }, context) {
   const errors = {};
   if (!current) errors.current = 'Enter your current password.';
-  if (next.length < MIN_PASSWORD_LENGTH) errors.next = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+  const weak = newPasswordError(next, context);
+  if (weak) errors.next = weak;
   else if (next === current) errors.next = 'Choose a password different from your current one.';
   if (!errors.next && confirm !== next) errors.confirm = 'The two new passwords do not match.';
   return Object.keys(errors).length ? errors : null;

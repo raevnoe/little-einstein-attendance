@@ -60,7 +60,7 @@ export default function PerformanceRecords() {
               className={inputClass({ className: 'w-auto' })}
             />
           </Field>
-          <Field id="records-area" label="Performance area">
+          <Field id="records-area" label="Behavior area">
             <select value={filters.area} onChange={set('area')} className={inputClass({ className: 'w-auto' })}>
               <option value="">All areas</option>
               {PERFORMANCE_AREAS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
@@ -76,13 +76,13 @@ export default function PerformanceRecords() {
         {!loading && result.error && <Alert tone="error" className="mb-4">{result.error}</Alert>}
 
         {evaluations.length > 0 && (
-          <ResponsiveTable label="Performance evaluations">
+          <ResponsiveTable label="Behavioral evaluations">
             <table className={`${TABLE} min-w-[720px]`}>
               <thead>
                 <tr>
                   <th scope="col" className={TH}>Date</th>
                   <th scope="col" className={TH}>Student</th>
-                  <th scope="col" className={TH}>Performance Area</th>
+                  <th scope="col" className={TH}>Behavior Area</th>
                   <th scope="col" className={TH}>Star Rating</th>
                   <th scope="col" className={TH}>Observation</th>
                   <th scope="col" className={TH}>Saved by</th>
@@ -107,7 +107,7 @@ export default function PerformanceRecords() {
           </ResponsiveTable>
         )}
         {!loading && data && evaluations.length === 0 && (
-          <EmptyState icon={<StarIcon className="h-6 w-6" />} title="No performance evaluations found." />
+          <EmptyState icon={<StarIcon className="h-6 w-6" />} title="No behavioral evaluations found." />
         )}
         {loading && !data && <LoadingState className="justify-center py-6">Loading…</LoadingState>}
       </div>

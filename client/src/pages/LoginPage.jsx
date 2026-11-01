@@ -49,7 +49,7 @@ export default function LoginPage({ onBack }) {
             <SchoolLogo className="h-56 w-auto" />
             <p className="mt-8 text-2xl font-bold tracking-tight text-brand-900">Welcome to Little Einstein</p>
             <p className="mt-2 text-base leading-relaxed text-brand-700">
-              Daily attendance, student performance and dismissal for our kindergarten families and staff.
+              Daily attendance, behavior and dismissal for our kindergarten families and staff.
             </p>
           </div>
         </div>
