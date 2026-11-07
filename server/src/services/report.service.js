@@ -13,7 +13,6 @@ import { ARRIVAL_STATUS, ATTENDANCE_STATUS, DEPARTURE_STATUS, noClassReason,
   MAX_REPORT_RANGE_DAYS,
   MAX_STAR_RATING,
   MIN_STAR_RATING,
-  PERFORMANCE_AREA_KEYS,
   REPORT_ATTENDANCE_STATUS,
   ROLES,
   dailyAverageStarRating,
@@ -39,9 +38,9 @@ function scoped(students, scope) {
 import { findUsersByIds, findUsersByRole } from '../models/user.model.js';
 import { addDays, isValidSchoolDate, schoolDateOf } from '../utils/schoolDate.js';
 import { HttpError } from '../utils/httpError.js';
+import { getSubjects, subjectOrder } from '../models/subject.model.js';
 
 const MAX_SECTION_LENGTH = 40;
-const areaOrder = (key) => PERFORMANCE_AREA_KEYS.indexOf(key);
 const fullName = (s) => [s.firstName, s.middleName, s.lastName].filter(Boolean).join(' ');
 const iso = (timestamp) => timestamp?.toDate?.().toISOString() ?? null;
 const byName = (a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)
@@ -224,9 +223,10 @@ export async function getAttendanceReport(query, { scope = ALL_SECTIONS } = {}) 
 
 // ---- performance report
 
-function parseAreaFilter(value) {
+function parseAreaFilter(value, subjects) {
   if (value === undefined) return null;
-  if (!PERFORMANCE_AREA_KEYS.includes(value)) throw badRequest('validation/invalid-area', 'Invalid behavior area.');
+  // Any subject on the school's list, hidden ones included (their past evaluations stay reportable).
+  if (!subjects.some((s) => s.key === value)) throw badRequest('validation/invalid-area', 'Invalid subject.');
   return value;
 }
 
@@ -246,10 +246,11 @@ export async function getPerformanceReport(query, { scope = ALL_SECTIONS } = {})
   const q = readQuery(query, ['from', 'to', 'section', 'studentId', 'area']);
   const today = schoolDateOf();
   const { from, to } = parseDateRange(q, today);
+  const subjects = await getSubjects();
   const filters = {
     studentId: parseStudentFilter(q.studentId),
     section: parseSectionFilter(q.section),
-    area: parseAreaFilter(q.area),
+    area: parseAreaFilter(q.area, subjects),
   };
 
   const [everyStudent, schoolRecords] = await Promise.all([findAllStudents(), findPerformanceInRange(from, to)]);
@@ -286,14 +287,14 @@ export async function getPerformanceReport(query, { scope = ALL_SECTIONS } = {})
     evaluated.push({
       student: reportStudent(s),
       ratings: own.length,
-      areas: [...areas.values()].sort((a, b) => areaOrder(a.area) - areaOrder(b.area)),
+      areas: [...areas.values()].sort((a, b) => subjectOrder(subjects, a.area) - subjectOrder(subjects, b.area)),
       days: [...byDate.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([evaluationDate, dayRecords]) => ({
           evaluationDate,
           dailyAverageStarRating: filters.area ? null : dailyAverageStarRating(dayRecords.map((r) => r.starRating)),
           evaluations: dayRecords
-            .sort((a, b) => areaOrder(a.area) - areaOrder(b.area))
+            .sort((a, b) => subjectOrder(subjects, a.area) - subjectOrder(subjects, b.area))
             .map((r) => ({
               area: r.area,
               starRating: r.starRating,

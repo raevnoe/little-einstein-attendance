@@ -23,7 +23,7 @@ const OUTCOME_TONES = {
 };
 const OUTCOME_LABELS = { success: 'Success', failure: 'Failed', denied: 'Denied' };
 const TARGET_LABELS = {
-  user: 'User', student: 'Student', rfidCard: 'RFID card', attendance: 'Attendance', performance: 'Evaluation',
+  user: 'User', student: 'Student', rfidCard: 'RFID card', attendance: 'Attendance', performance: 'Evaluation', subject: 'Subject',
   fetcher: 'Pick-up person', dismissal: 'Dismissal', route: 'API',
 };
 

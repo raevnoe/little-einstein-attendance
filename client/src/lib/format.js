@@ -1,4 +1,5 @@
 // Small display helpers shared by pages.
+import { durationText } from '@led/shared';
 
 export function studentFullName({ firstName, middleName, lastName }) {
   return [firstName, middleName, lastName].filter(Boolean).join(' ');
@@ -57,13 +58,8 @@ export function maskMobileNumber(number) {
   return match ? `+63 ${match[1]} ••• ${match[2]}` : null;
 }
 
-/** 22 -> "22 min", 60 -> "1 hour", 75 -> "1 hour 15 min", 130 -> "2 hours 10 min". */
-export function durationText(minutes) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  const hours = h ? `${h} hour${h === 1 ? '' : 's'}` : '';
-  return [hours, m || !h ? `${m} min` : ''].filter(Boolean).join(' ');
-}
+// 22 -> "22 min", 75 -> "1 hour 15 min" (shared with the server's SMS text).
+export { durationText };
 
 /** "22 min late", "1 hour 15 min late"; just "Late" when the minutes are unknown or under one. */
 export function lateText(minutes) {

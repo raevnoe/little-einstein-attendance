@@ -240,6 +240,7 @@ export async function processRfidScan({ rawUid, source, ctx = { actor: SYSTEM_AC
       student,
       attendanceId: attendanceDocId(studentId, decision.schoolDate),
       occurredAt: decision.now.toDate(),
+      record, // the stored late / early pick-up decision, for the SMS text
     };
     [sms] = await Promise.all([notifyAttendanceEvent(event), notifyAttendanceInApp(event)]);
     await recordSmsOutcome(sms, studentId, event.attendanceId);

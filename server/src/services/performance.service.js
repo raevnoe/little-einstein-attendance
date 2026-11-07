@@ -6,7 +6,8 @@
 // same student/date/area end as ONE record (the losing transaction retries as an update).
 // Audit (Phase 11): each save writes its audit entry in that same transaction, with the star
 // rating before/after and whether the observation changed - never the observation text.
-import { PERFORMANCE_AREA_KEYS, dailyAverageStarRating } from '@led/shared';
+import { SUBJECT_KEY_PATTERN, dailyAverageStarRating } from '@led/shared';
+import { getSubjects, subjectOrder } from '../models/subject.model.js';
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { env } from '../config/env.js';
@@ -40,7 +41,6 @@ const studentInactive = () => new HttpError(409, 'students/inactive', 'This stud
 const invalid = (fields) => new HttpError(400, 'validation/invalid-performance', 'Please correct the highlighted fields.', { fields });
 
 const fullName = (s) => [s.firstName, s.middleName, s.lastName].filter(Boolean).join(' ');
-const areaOrder = (key) => PERFORMANCE_AREA_KEYS.indexOf(key);
 
 function asObject(body) {
   return body && typeof body === 'object' && !Array.isArray(body) ? body : {};
@@ -143,7 +143,9 @@ export async function saveEvaluation(ctx, input, { scope = ALL_SECTIONS } = {}) 
   if (!studentId) errors.studentId = 'Select a valid student.';
   const date = validateEvaluationDate(body.evaluationDate);
   if (date.error) errors.evaluationDate = date.error;
-  if (!PERFORMANCE_AREA_KEYS.includes(body.area)) errors.area = 'Select a valid performance area.';
+  // New evaluations only for a VISIBLE subject; existing ones (even of a hidden subject) can still be edited.
+  const subject = (await getSubjects()).find((s) => s.key === body.area);
+  if (!subject) errors.area = 'Select one of the school\'s subjects.';
   const rating = validateStarRating(body.starRating);
   if (rating.error) errors.starRating = rating.error;
   const observation = validateObservation(body.observation);
@@ -155,6 +157,9 @@ export async function saveEvaluation(ctx, input, { scope = ALL_SECTIONS } = {}) 
   const { created, student } = await db.runTransaction(async (tx) => {
     const student = await assertActiveStudent(tx, studentId, scope);
     const existing = await tx.get(ref);
+    if (!existing.exists && subject.hidden) {
+      throw invalid({ area: `${subject.label} is hidden. An admin can show it again on the Subjects tab.` });
+    }
     const fields = {
       starRating: rating.value,
       observation: observation.value,
@@ -233,8 +238,8 @@ export async function listEvaluations({ studentId: rawStudentId, date: rawDate, 
     studentId = normalizeStudentId(rawStudentId);
     if (!studentId) throw new HttpError(400, 'validation/invalid-student-id', 'Invalid Student ID.');
   }
-  if (area !== undefined && area !== '' && !PERFORMANCE_AREA_KEYS.includes(area)) {
-    throw new HttpError(400, 'validation/invalid-area', 'Invalid performance area.');
+  if (area !== undefined && area !== '' && !(typeof area === 'string' && SUBJECT_KEY_PATTERN.test(area))) {
+    throw new HttpError(400, 'validation/invalid-area', 'Invalid subject.');
   }
   const today = schoolDateOf();
   const date = parseQueryDate(rawDate) ?? (studentId ? null : today);
@@ -243,10 +248,11 @@ export async function listEvaluations({ studentId: rawStudentId, date: rawDate, 
     .filter((r) => !date || r.evaluationDate === date)
     .filter((r) => !area || r.area === area);
 
+  const subjects = await getSubjects();
   const evaluations = (await withNames(records)).filter((e) => evaluationInScope(scope, e)).sort((a, b) =>
     b.evaluationDate.localeCompare(a.evaluationDate)
     || (a.student?.name ?? a.studentId).localeCompare(b.student?.name ?? b.studentId)
-    || areaOrder(a.area) - areaOrder(b.area));
+    || subjectOrder(subjects, a.area) - subjectOrder(subjects, b.area));
 
   return { today, timeZone: env.schoolTimeZone, date, evaluations };
 }
@@ -268,12 +274,13 @@ export async function getChildPerformance(parentUid, studentId, { date: rawDate 
     byDate.get(r.evaluationDate).push(r);
   }
 
+  const subjects = await getSubjects();
   const days = [...byDate.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
     .map(([evaluationDate, records]) => ({
       evaluationDate,
       dailyAverageStarRating: dailyAverageStarRating(records.map((r) => r.starRating)),
-      evaluations: records.sort((a, b) => areaOrder(a.area) - areaOrder(b.area)).map(toParentPerformanceView),
+      evaluations: records.sort((a, b) => subjectOrder(subjects, a.area) - subjectOrder(subjects, b.area)).map(toParentPerformanceView),
     }));
 
   return { studentId, today, date, days };

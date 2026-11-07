@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PERFORMANCE_AREAS } from '@led/shared';
+import { useSubjects } from '../../lib/useSubjects.js';
 import { apiRequest } from '../../lib/apiClient.js';
 import { RANGE_PRESETS, presetRange } from '../../lib/dateRange.js';
 import { studentFullName } from '../../lib/format.js';
@@ -30,6 +30,7 @@ function useStudentOptions() {
  * `today` and `sections` come from the last report the server returned.
  */
 export default function ReportFilters({ filters, onChange, today, sections = [], showArea = false, idPrefix }) {
+  const { subjects } = useSubjects();
   const students = useStudentOptions();
   const set = (key) => (e) => onChange({ ...filters, [key]: e.target.value });
   const id = (name) => `${idPrefix}-${name}`;
@@ -92,10 +93,10 @@ export default function ReportFilters({ filters, onChange, today, sections = [],
         </div>
         {showArea && (
           <div>
-            <label htmlFor={id('area')} className={LABEL}>Area</label>
+            <label htmlFor={id('area')} className={LABEL}>Subject</label>
             <select id={id('area')} value={filters.area} onChange={set('area')} className={INPUT}>
-              <option value="">All areas</option>
-              {PERFORMANCE_AREAS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+              <option value="">All subjects</option>
+              {subjects.map((a) => <option key={a.key} value={a.key}>{a.label}{a.hidden ? ' (hidden)' : ''}</option>)}
             </select>
           </div>
         )}

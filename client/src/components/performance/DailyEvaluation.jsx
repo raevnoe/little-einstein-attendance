@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { PERFORMANCE_AREAS, dailyAverageStarRating } from '@led/shared';
+import { dailyAverageStarRating } from '@led/shared';
+import { useSubjects } from '../../lib/useSubjects.js';
 import { apiRequest } from '../../lib/apiClient.js';
 import { OFFLINE_MESSAGE, formatDate, studentFullName } from '../../lib/format.js';
 import { saveAreaEvaluation } from '../../lib/performanceEvaluation.js';
@@ -14,6 +15,7 @@ import { StarIcon } from '../ui/icons.jsx';
  * at a time or every changed area at once ("Save all").
  */
 export default function DailyEvaluation() {
+  const { subjects } = useSubjects();
   const [setup, setSetup] = useState({ loading: true, students: [], today: null, timeZone: null, error: null });
   const [studentId, setStudentId] = useState('');
   const [date, setDate] = useState('');
@@ -71,7 +73,7 @@ export default function DailyEvaluation() {
 
   // Saves every changed area that has a star rating, one after another; one sound at the end.
   async function saveAll() {
-    const changedAreas = PERFORMANCE_AREAS.filter((a) => drafts[a.key]);
+    const changedAreas = shownSubjects.filter((a) => drafts[a.key]);
     const unrated = changedAreas.filter((a) => !drafts[a.key].starRating);
     const toSave = changedAreas.filter((a) => drafts[a.key].starRating);
     setNotice(null);
@@ -116,6 +118,8 @@ export default function DailyEvaluation() {
   const ready = result.forKey === `${studentId}|${date}`;
   const evaluations = ready ? result.evaluations : [];
   const byArea = new Map(evaluations.map((e) => [e.area, e]));
+  // Visible subjects, plus a hidden one only when this day already has its evaluation.
+  const shownSubjects = subjects.filter((s) => !s.hidden || byArea.has(s.key));
   const average = dailyAverageStarRating(evaluations.map((e) => e.starRating));
   const draftCount = Object.keys(drafts).length;
   const saveAllButton = (
@@ -201,8 +205,8 @@ export default function DailyEvaluation() {
           {!ready ? (
             <LoadingState className="py-6">Loading evaluations…</LoadingState>
           ) : result.error ? null : (
-            <ul className="grid gap-4 lg:grid-cols-2" aria-label={`Behavior areas for ${studentFullName(student)}`}>
-              {PERFORMANCE_AREAS.map((area) => {
+            <ul className="grid gap-4 lg:grid-cols-2" aria-label={`Subjects for ${studentFullName(student)}`}>
+              {shownSubjects.map((area) => {
                 const evaluation = byArea.get(area.key) ?? null;
                 return (
                   <AreaEvaluationRow

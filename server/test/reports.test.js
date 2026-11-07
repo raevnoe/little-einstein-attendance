@@ -65,11 +65,11 @@ before(async () => {
   seedAttendance(ANA, day(40), '07:45', '11:00'); // outside every range used below
 
   // Performance
-  seedEvaluation(ANA, day(1), 'following-directions', 4, '=HYPERLINK("http://x") Reads short words.');
-  seedEvaluation(ANA, day(1), 'sharing-cooperation', 3, 'Counts to 20.');
-  seedEvaluation(ANA, day(2), 'following-directions', 5);
-  seedEvaluation(CY, day(2), 'self-control', 2, 'Needs help.');
-  seedEvaluation(ANA, today, 'following-directions', 4);
+  seedEvaluation(ANA, day(1), 'language', 4, '=HYPERLINK("http://x") Reads short words.');
+  seedEvaluation(ANA, day(1), 'mathematics', 3, 'Counts to 20.');
+  seedEvaluation(ANA, day(2), 'language', 5);
+  seedEvaluation(CY, day(2), 'science', 2, 'Needs help.');
+  seedEvaluation(ANA, today, 'language', 4);
 
   // RFID cards
   api.fake.seed('rfidCards', ANA_UID, { uid: ANA_UID, studentId: ANA, active: true });
@@ -256,12 +256,12 @@ describe('performance report', () => {
     const ana = res.body.students.find((s) => s.student.studentId === ANA);
     assert.equal(ana.ratings, 3);
     assert.deepEqual(ana.areas, [
-      { area: 'following-directions', ratings: 2, starCounts: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 } },
-      { area: 'sharing-cooperation', ratings: 1, starCounts: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 } },
+      { area: 'language', ratings: 2, starCounts: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 } },
+      { area: 'mathematics', ratings: 1, starCounts: { 1: 0, 2: 0, 3: 1, 4: 0, 5: 0 } },
     ]);
     assert.deepEqual(ana.days.map((d) => [d.evaluationDate, d.dailyAverageStarRating]), [[day(2), 5], [day(1), 3.5]]);
     assert.deepEqual(ana.days[1].evaluations[0], {
-      area: 'following-directions', starRating: 4, observation: '=HYPERLINK("http://x") Reads short words.', teacherName: 'Tess Test',
+      area: 'language', starRating: 4, observation: '=HYPERLINK("http://x") Reads short words.', teacherName: 'Tess Test',
     });
     assert.ok(!/grade|percent|gpa/i.test(res.text));
     assert.ok(!('average' in ana) && !('averageStarRating' in ana), 'no range average');
@@ -275,9 +275,9 @@ describe('performance report', () => {
   });
 
   test('area filter: only that area, and no Daily Average (it summarizes all areas)', async () => {
-    const res = await performanceReport({ from: day(2), to: day(1), area: 'sharing-cooperation' });
+    const res = await performanceReport({ from: day(2), to: day(1), area: 'mathematics' });
     assert.deepEqual(res.body.students.map((s) => s.student.studentId), [ANA]);
-    assert.deepEqual(res.body.students[0].areas.map((a) => a.area), ['sharing-cooperation']);
+    assert.deepEqual(res.body.students[0].areas.map((a) => a.area), ['mathematics']);
     assert.equal(res.body.students[0].days[0].dailyAverageStarRating, null);
   });
 

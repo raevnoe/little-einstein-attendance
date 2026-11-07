@@ -186,3 +186,24 @@ describe('excusing a late arrival', () => {
     assert.equal(record(ANA).arrivalStatus, 'late', 'nothing changed');
   });
 });
+
+describe('SMS text', () => {
+  test('says a late arrival or early pick-up in hours and minutes; on time stays as before', async () => {
+    const { attendanceSmsMessage } = await import('../src/services/notification.service.js');
+    const student = { firstName: 'Ana', lastName: 'Cruz' };
+    const at = new Date('2026-09-07T01:20:00Z'); // 9:20 AM in Manila
+    const arrival = (rec) => attendanceSmsMessage('arrival', student, at, rec);
+    const pickUp = (rec) => attendanceSmsMessage('departure', student, at, rec);
+
+    assert.match(arrival({ arrivalStatus: 'late', lateMinutes: 65 }), /Ana Cruz arrived at school at 9:20 AM \(1 hour 5 min late\)\.$/);
+    assert.match(arrival({ arrivalStatus: 'late', lateMinutes: 20 }), /\(20 min late\)\.$/);
+    assert.match(arrival({ arrivalStatus: 'late', lateMinutes: 120 }), /\(2 hours late\)\.$/);
+    assert.match(arrival({ arrivalStatus: 'on-time', lateMinutes: 0 }), /Ana Cruz has arrived at school at 9:20 AM\.$/);
+    assert.match(arrival(null), /has arrived at school at 9:20 AM\.$/); // older records: no status
+    assert.match(pickUp({ departureStatus: 'early', earlyMinutes: 75 }), /picked up early at 9:20 AM \(1 hour 15 min before class ended\)\.$/);
+    assert.match(pickUp({ departureStatus: 'on-time', earlyMinutes: 0 }), /Ana Cruz was picked up at 9:20 AM\.$/);
+    // One SMS (160 GSM-7 characters) even with a long name.
+    const long = attendanceSmsMessage('departure', { firstName: 'Maria Clarissa', lastName: 'Dela Cruz' }, at, { departureStatus: 'early', earlyMinutes: 135 });
+    assert.ok(long.length <= 160, `${long.length} characters`);
+  });
+});

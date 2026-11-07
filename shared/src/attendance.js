@@ -130,3 +130,11 @@ export function dayStatusWithoutRecord({ schoolDate, today, elapsedMs, endTime, 
   if (schoolDate === today && elapsedMs < minutesOfTime(endTime) * 60_000) return ATTENDANCE_STATUS.NOT_ARRIVED;
   return ATTENDANCE_STATUS.ABSENT;
 }
+
+/** 22 -> "22 min", 60 -> "1 hour", 75 -> "1 hour 15 min", 130 -> "2 hours 10 min" (screens and SMS). */
+export function durationText(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const hours = h ? `${h} hour${h === 1 ? '' : 's'}` : '';
+  return [hours, m || !h ? `${m} min` : ''].filter(Boolean).join(' ');
+}

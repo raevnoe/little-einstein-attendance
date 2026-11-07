@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PERFORMANCE_AREAS, performanceAreaLabel } from '@led/shared';
+import { useSubjects } from '../../lib/useSubjects.js';
 import { apiRequest } from '../../lib/apiClient.js';
 import { formatDate } from '../../lib/format.js';
 import { StarDisplay } from './StarRating.jsx';
@@ -11,6 +11,7 @@ import { StarIcon } from '../ui/icons.jsx';
  * With no student selected a date is required (the API defaults to today).
  */
 export default function PerformanceRecords() {
+  const { subjects, label } = useSubjects();
   const [students, setStudents] = useState([]);
   const [filters, setFilters] = useState({ studentId: '', date: '', area: '' });
   // forFilters = the filters the result belongs to; loading is derived from it.
@@ -60,10 +61,10 @@ export default function PerformanceRecords() {
               className={inputClass({ className: 'w-auto' })}
             />
           </Field>
-          <Field id="records-area" label="Behavior area">
+          <Field id="records-area" label="Subject">
             <select value={filters.area} onChange={set('area')} className={inputClass({ className: 'w-auto' })}>
-              <option value="">All areas</option>
-              {PERFORMANCE_AREAS.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+              <option value="">All subjects</option>
+              {subjects.map((a) => <option key={a.key} value={a.key}>{a.label}{a.hidden ? ' (hidden)' : ''}</option>)}
             </select>
           </Field>
         </div>
@@ -82,7 +83,7 @@ export default function PerformanceRecords() {
                 <tr>
                   <th scope="col" className={TH}>Date</th>
                   <th scope="col" className={TH}>Student</th>
-                  <th scope="col" className={TH}>Behavior Area</th>
+                  <th scope="col" className={TH}>Subject</th>
                   <th scope="col" className={TH}>Star Rating</th>
                   <th scope="col" className={TH}>Observation</th>
                   <th scope="col" className={TH}>Saved by</th>
@@ -96,7 +97,7 @@ export default function PerformanceRecords() {
                       {e.student?.name ?? e.studentId}
                       <span className="block font-mono text-xs font-normal text-brand-500">{e.studentId}</span>
                     </td>
-                    <td className={`${TD} text-brand-700`}>{performanceAreaLabel(e.area)}</td>
+                    <td className={`${TD} text-brand-700`}>{label(e.area)}</td>
                     <td className={`${TD} whitespace-nowrap`}><StarDisplay value={e.starRating} size="text-base" showLabel /></td>
                     <td className={`${TD} whitespace-pre-line text-brand-700`}>{e.observation || '—'}</td>
                     <td className={`${TD} text-brand-700`}>{e.teacherName ?? '—'}</td>

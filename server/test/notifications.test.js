@@ -235,14 +235,14 @@ describe('performance', () => {
       token: tokens.teacher,
       body: { studentId: BEN, evaluationDate: today, area, starRating: 4, observation: 'Shared crayons kindly.' },
     });
-    assert.equal((await save('following-directions')).status, 201);
-    assert.equal((await save('sharing-cooperation')).status, 201);
-    assert.equal((await save('following-directions')).status, 200); // edit: no duplicate area
+    assert.equal((await save('language')).status, 201);
+    assert.equal((await save('mathematics')).status, 201);
+    assert.equal((await save('language')).status, 200); // edit: no duplicate area
 
     const list = items('parentB');
     assert.equal(list.length, 1);
     assert.equal(list[0].title, 'New Behavioral Evaluation for Ben');
-    assert.match(list[0].body, /: Following Directions, Sharing and Cooperation$/);
+    assert.match(list[0].body, /: Language, Mathematics$/);
     assert.equal(list[0].date, today);
     const [view] = (await feed(tokens.parentB)).body.items;
     assert.equal(view.date, today);

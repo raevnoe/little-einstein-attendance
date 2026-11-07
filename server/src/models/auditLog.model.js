@@ -66,6 +66,8 @@ const DETAIL_FIELDS = {
   'attendance.late-excuse-removed': ['studentId', 'schoolDate', 'lateMinutes'],
   'performance.created': PERFORMANCE,
   'performance.updated': PERFORMANCE,
+  'subject.added': ['subject', 'changes'],
+  'subject.updated': ['subject', 'changes'],
   'fetcher.created': FETCHER,
   'fetcher.updated': FETCHER,
   'fetcher.deactivated': FETCHER,
@@ -75,6 +77,7 @@ const DETAIL_FIELDS = {
   'dismissal.released': DISMISSAL,
   'dismissal.release-failed': DISMISSAL,
   'sms.attendance-notification': ['event', 'studentId', 'status', 'sent', 'failed', 'skipped', 'errorCodes'],
+  'sms.absence-notices': ['students', 'studentIds', 'sent', 'failed'],
   'settings.changed': ['group', 'changes'],
 };
 

@@ -15,12 +15,13 @@ import {
   NOTIFICATION_KINDS as KIND,
   ROLES,
   SCAN_OUTCOMES,
-  performanceAreaLabel,
+  subjectLabel,
 } from '@led/shared';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { db } from '../config/firebaseAdmin.js';
 import { audiencesFor, inboxCollection, isoFloor, toInboxView } from '../models/inbox.model.js';
 import { sectionKey } from '../models/section.model.js';
+import { getSubjects } from '../models/subject.model.js';
 import { findStudentsByParent } from '../models/student.model.js';
 import { findUsersByIds, findUsersByRole, usersCollection } from '../models/user.model.js';
 import { formatSchoolDateShort, formatSchoolTime, schoolDateOf } from '../utils/schoolDate.js';
@@ -119,13 +120,14 @@ export async function notifyAttendanceInApp({ event, student, attendanceId, occu
 export async function notifyPerformanceInApp({ student, evaluationDate, area }) {
   await safely(KIND.PERFORMANCE, async () => {
     const uids = await activeParentUids(student.parentIds);
+    const subjects = await getSubjects();
     await deliverUpdate(uids, `performance_${student.studentId}_${evaluationDate}`, (previous) => {
       const areas = [...new Set([...(previous?.areas ?? []), area])];
       return {
         kind: KIND.PERFORMANCE,
         audience: AUDIENCE.PARENT,
         title: `New Behavioral Evaluation for ${student.firstName}`,
-        body: `${formatSchoolDateShort(evaluationDate)}: ${areas.map(performanceAreaLabel).join(', ')}`,
+        body: `${formatSchoolDateShort(evaluationDate)}: ${areas.map((key) => subjectLabel(subjects, key)).join(', ')}`,
         link: 'records',
         studentId: student.studentId,
         date: evaluationDate,

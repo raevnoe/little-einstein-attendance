@@ -77,7 +77,7 @@ test('parents read only their own child’s attendance', async () => {
 });
 
 test('Performance Evaluation save, update and parent read-only view', async () => {
-  const body = { studentId: 'K2026-001', evaluationDate: today, area: 'following-directions', starRating: 4, observation: 'Read a short story.' };
+  const body = { studentId: 'K2026-001', evaluationDate: today, area: 'language', starRating: 4, observation: 'Read a short story.' };
   const created = await api.call('POST', '/performance', { token: teacher, body });
   assert.equal(created.status, 201);
   assert.equal(created.body.evaluation.teacherId, 'teacher1');

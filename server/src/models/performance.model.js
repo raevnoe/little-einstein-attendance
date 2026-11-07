@@ -5,7 +5,7 @@
 //
 //   studentId       string   school Student ID
 //   evaluationDate  string   "YYYY-MM-DD" school-local date (same rule as attendance)
-//   area            string   key from PERFORMANCE_AREAS
+//   area            string   subject key (systemSettings/subjects; see models/subject.model.js)
 //   starRating      integer  1-5 (visual rating, not a grade)
 //   observation     string   short teacher note ('' when none)
 //   teacherId       string   uid of the staff member who last saved it (from the verified token)
@@ -17,7 +17,7 @@ import {
   MAX_OBSERVATION_LENGTH,
   MAX_STAR_RATING,
   MIN_STAR_RATING,
-  PERFORMANCE_AREA_KEYS,
+  SUBJECT_KEY_PATTERN,
 } from '@led/shared';
 import { db } from '../config/firebaseAdmin.js';
 import { normalizeStudentId } from './student.model.js';
@@ -31,7 +31,7 @@ export function parsePerformanceDocId(value) {
   const match = /^([^_]+)_(\d{4}-\d{2}-\d{2})_([a-z-]+)$/.exec(typeof value === 'string' ? value : '');
   if (!match) return null;
   const studentId = normalizeStudentId(match[1]);
-  if (!studentId || studentId !== match[1] || !PERFORMANCE_AREA_KEYS.includes(match[3])) return null;
+  if (!studentId || studentId !== match[1] || !SUBJECT_KEY_PATTERN.test(match[3])) return null;
   return { studentId, evaluationDate: match[2], area: match[3] };
 }
 

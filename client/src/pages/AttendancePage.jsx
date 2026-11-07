@@ -4,6 +4,7 @@ import { apiRequest } from '../lib/apiClient.js';
 import { formatDate, formatTime } from '../lib/format.js';
 import { browserIsIdle, createPoller } from '../lib/poller.js';
 import { dataSignature, soundIfChanged } from '../lib/refreshSound.js';
+import AbsenceNotices from '../components/attendance/AbsenceNotices.jsx';
 import AttendanceStatusBadge from '../components/attendance/AttendanceStatusBadge.jsx';
 import ArrivalBadge, { DepartureBadge } from '../components/attendance/ArrivalBadge.jsx';
 import LateExcuse from '../components/attendance/LateExcuse.jsx';
@@ -132,6 +133,9 @@ export default function AttendancePage() {
           </dl>
         </section>
       )}
+
+      {/* Remounted when the absent count changes, so the list always matches the tiles. */}
+      {viewingToday && data.summary.absent > 0 && <AbsenceNotices key={data.summary.absent} />}
 
       <Card padded={false}>
         <div className="flex flex-wrap items-end gap-3 border-b border-brand-100 p-4 sm:p-5">

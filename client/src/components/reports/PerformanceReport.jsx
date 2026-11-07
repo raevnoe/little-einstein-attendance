@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { MAX_STAR_RATING, MIN_STAR_RATING, performanceAreaLabel } from '@led/shared';
+import { MAX_STAR_RATING, MIN_STAR_RATING } from '@led/shared';
+import { useSubjects } from '../../lib/useSubjects.js';
 import { formatDateRange, formatDayDate } from '../../lib/format.js';
 import { csvFileName, downloadCsv, toCsv } from '../../lib/csv.js';
 import Panel, { ErrorMessage, QuietButton } from '../Panel.jsx';
@@ -16,23 +17,23 @@ const STAR_VALUES = Array.from({ length: MAX_STAR_RATING - MIN_STAR_RATING + 1 }
 
 const sortName = (s) => `${s.lastName}, ${[s.firstName, s.middleName].filter(Boolean).join(' ')}`;
 
-function exportCsv(kind, report) {
+function exportCsv(kind, report, label) {
   const fileName = csvFileName('performance', kind, report.from, 'to', report.to, report.filters.section, report.filters.studentId, report.filters.area);
   const student = (s) => [s.studentId, s.lastName, s.firstName, s.middleName, s.section];
   const STUDENT_HEADERS = ['Student ID', 'Last name', 'First name', 'Middle name', 'Section'];
 
   if (kind === 'star-counts') {
     downloadCsv(fileName, toCsv(
-      [...STUDENT_HEADERS, 'Area', 'Star ratings', ...STAR_VALUES.map((n) => `${n} stars`)],
+      [...STUDENT_HEADERS, 'Subject', 'Star ratings', ...STAR_VALUES.map((n) => `${n} stars`)],
       report.students.flatMap((s) => s.areas.map((a) => [
-        ...student(s.student), performanceAreaLabel(a.area), a.ratings, ...STAR_VALUES.map((n) => a.starCounts[n]),
+        ...student(s.student), label(a.area), a.ratings, ...STAR_VALUES.map((n) => a.starCounts[n]),
       ])),
     ));
   } else {
     downloadCsv(fileName, toCsv(
-      ['Date', ...STUDENT_HEADERS, 'Area', 'Stars', 'Observation', 'Teacher', 'Daily Average Star Rating'],
+      ['Date', ...STUDENT_HEADERS, 'Subject', 'Stars', 'Observation', 'Teacher', 'Daily Average Star Rating'],
       report.students.flatMap((s) => s.days.flatMap((d) => d.evaluations.map((e) => [
-        d.evaluationDate, ...student(s.student), performanceAreaLabel(e.area), e.starRating, e.observation, e.teacherName ?? '',
+        d.evaluationDate, ...student(s.student), label(e.area), e.starRating, e.observation, e.teacherName ?? '',
         d.dailyAverageStarRating ?? '',
       ]))),
     ));
@@ -50,6 +51,7 @@ function CsvButton({ onClick, disabled, children }) {
 }
 
 function StarCountsTable({ areas }) {
+  const { label } = useSubjects();
   return (
     <div className="relative overflow-x-auto rounded-2xl ring-1 ring-brand-100 print:rounded-none print:ring-0">
       <table className="w-full min-w-[420px] text-left text-sm">
@@ -68,7 +70,7 @@ function StarCountsTable({ areas }) {
         <tbody>
           {areas.map((a) => (
             <tr key={a.area} className="border-t border-brand-100 hover:bg-canvas/70">
-              <th scope="row" className="px-4 py-2.5 font-medium text-brand-900">{performanceAreaLabel(a.area)}</th>
+              <th scope="row" className="px-4 py-2.5 font-medium text-brand-900">{label(a.area)}</th>
               <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-brand-900">{a.ratings}</td>
               {STAR_VALUES.map((n) => (
                 <td key={n} className={`px-4 py-2.5 text-right tabular-nums ${a.starCounts[n] ? 'text-brand-900' : 'text-brand-300'}`}>
@@ -84,6 +86,7 @@ function StarCountsTable({ areas }) {
 }
 
 function EvaluationDays({ days, showAverage }) {
+  const { label } = useSubjects();
   return (
     <ol className="space-y-3">
       {days.map((d) => (
@@ -100,7 +103,7 @@ function EvaluationDays({ days, showAverage }) {
             {d.evaluations.map((e) => (
               <li key={e.area} className="rounded-xl bg-paper p-2.5 text-sm ring-1 ring-brand-100 print:p-0 print:ring-0">
                 <p className="flex flex-wrap items-center gap-x-2">
-                  <span className="font-medium text-brand-900">{performanceAreaLabel(e.area)}</span>
+                  <span className="font-medium text-brand-900">{label(e.area)}</span>
                   <StarDisplay value={e.starRating} size="text-lg" showLabel />
                   {e.teacherName && <span className="text-xs text-brand-600 dark:text-brand-300">· {e.teacherName}</span>}
                 </p>
@@ -142,6 +145,7 @@ function StudentSection({ entry, showAverage, showObservations }) {
  * averages across days or areas are shown, only each day's Daily Average Star Rating.
  */
 export default function PerformanceReport() {
+  const { label } = useSubjects();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [showObservations, setShowObservations] = useState(true);
   const { data: report, loading, error, invalid, today, reload } = useReport('/reports/performance', filters);
@@ -164,8 +168,8 @@ export default function PerformanceReport() {
                 <input type="checkbox" checked={showObservations} onChange={(e) => setShowObservations(e.target.checked)} className="h-5 w-5 accent-brand-600" />
                 Show observations
               </label>
-              <CsvButton onClick={() => exportCsv('star-counts', report)} disabled={report.students.length === 0}>Star counts CSV</CsvButton>
-              <CsvButton onClick={() => exportCsv('observations', report)} disabled={report.students.length === 0}>Observations CSV</CsvButton>
+              <CsvButton onClick={() => exportCsv('star-counts', report, label)} disabled={report.students.length === 0}>Star counts CSV</CsvButton>
+              <CsvButton onClick={() => exportCsv('observations', report, label)} disabled={report.students.length === 0}>Observations CSV</CsvButton>
             </ReportActions>
           </ReportHeader>
 

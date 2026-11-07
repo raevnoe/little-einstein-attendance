@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { ROLES } from '@led/shared';
+import { useAuth } from '../auth/useAuth.js';
 import DailyEvaluation from '../components/performance/DailyEvaluation.jsx';
 import PerformanceRecords from '../components/performance/PerformanceRecords.jsx';
+import SubjectsManager from '../components/performance/SubjectsManager.jsx';
 import { FOCUS_RING } from '../components/ui/classes.js';
 
 const VIEWS = [
@@ -10,15 +13,18 @@ const VIEWS = [
 
 /**
  * Student Performance Evaluation for staff (admin and teacher): daily star ratings and
- * observations per performance area. Not a grading system. The API enforces access.
+ * observations per subject. Not a grading system. Admins also get the Subjects tab (add, rename,
+ * hide). The API enforces access.
  */
 export default function PerformancePage() {
+  const { account } = useAuth();
   const [view, setView] = useState('evaluate');
+  const views = account?.user?.role === ROLES.ADMIN ? [...VIEWS, { key: 'subjects', label: 'Subjects' }] : VIEWS;
 
   return (
     <div className="space-y-5">
       <div className="inline-flex flex-wrap gap-1 rounded-2xl border border-brand-100 bg-canvas p-1" role="tablist">
-        {VIEWS.map((v) => (
+        {views.map((v) => (
           <button
             key={v.key}
             type="button"
@@ -33,7 +39,9 @@ export default function PerformancePage() {
           </button>
         ))}
       </div>
-      {view === 'evaluate' ? <DailyEvaluation /> : <PerformanceRecords />}
+      {view === 'evaluate' && <DailyEvaluation />}
+      {view === 'records' && <PerformanceRecords />}
+      {view === 'subjects' && <SubjectsManager />}
     </div>
   );
 }

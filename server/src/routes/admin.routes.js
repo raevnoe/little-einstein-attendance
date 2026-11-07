@@ -5,6 +5,7 @@ import { requireRole } from '../middleware/requireRole.js';
 import { assignRole, createAccount, listAccounts, setAccountActive, setParentMobileNumber, setTeacherSections } from '../services/userAccount.service.js';
 import { addSection, listSections, removeSection, setSectionHours } from '../services/section.service.js';
 import { readSchoolCalendar, updateSchoolCalendar } from '../services/calendar.service.js';
+import { addSubject, updateSubject } from '../services/subject.service.js';
 import { findUsersByRole, UID_PATTERN } from '../models/user.model.js';
 import { adminDeactivateFetcher, listAllFetchers, parseFetcherId } from '../services/fetcher.service.js';
 import { getAdminOverview } from '../services/report.service.js';
@@ -60,6 +61,21 @@ router.get('/calendar', async (req, res) => {
 // PUT /api/admin/calendar { schoolYearStart, noClassDates } - replaces the calendar (audited).
 router.put('/calendar', async (req, res) => {
   res.json(await updateSchoolCalendar(auditContext(req), req.body));
+});
+
+// POST /api/admin/subjects { label } - adds a subject (its key is made from the name; audited).
+router.post('/subjects', async (req, res) => {
+  const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  if (Object.keys(body).some((key) => key !== 'label')) {
+    throw new HttpError(400, 'validation/invalid-request', 'Send only { "label": "..." }.');
+  }
+  res.status(201).json(await addSubject(auditContext(req), body));
+});
+
+// PATCH /api/admin/subjects/:key { label? | hidden? | move?: "up" | "down" } - rename, hide/show, reorder.
+// There is no delete: a hidden subject keeps every past evaluation.
+router.patch('/subjects/:key', async (req, res) => {
+  res.json(await updateSubject(auditContext(req), req.params.key, req.body));
 });
 
 // GET /api/admin/parents - parent accounts, for linking parents to students.

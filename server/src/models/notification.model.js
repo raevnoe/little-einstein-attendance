@@ -5,8 +5,9 @@
 //
 //   studentId          string    school Student ID
 //   parentIds          string[]  parent accounts that share this number
-//   attendanceId       string    attendance/{attendanceId} that triggered it
-//   event              string    arrival | departure
+//   attendanceId       string    attendance/{attendanceId} that triggered it (absence: same ID shape, no record)
+//   event              string    arrival | departure | absence
+//   schoolDate         string    absence notices only: the day, so one query finds them
 //   channel            string    sms
 //   recipient          string?   +639XXXXXXXXX (null when skipped)
 //   message            string    exact text sent
@@ -22,13 +23,22 @@
 import { COLLECTIONS } from '@led/shared';
 import { db } from '../config/firebaseAdmin.js';
 
-export const NOTIFICATION_EVENTS = Object.freeze({ ARRIVAL: 'arrival', DEPARTURE: 'departure' });
+export const NOTIFICATION_EVENTS = Object.freeze({ ARRIVAL: 'arrival', DEPARTURE: 'departure', ABSENCE: 'absence' });
 export const NOTIFICATION_STATUS = Object.freeze({ PENDING: 'pending', SENT: 'sent', FAILED: 'failed', SKIPPED: 'skipped' });
 
 export const notificationsCollection = () => db.collection(COLLECTIONS.NOTIFICATIONS);
 
 export const notificationDocId = (attendanceId, event, recipient) =>
   `${attendanceId}_${event}_${recipient ? recipient.replace(/\D/g, '') : 'none'}`;
+
+/** Student and status ONLY of one school day's absence notices (no text or numbers are read). */
+export async function findAbsenceNoticesOn(schoolDate) {
+  const snapshot = await notificationsCollection().where('schoolDate', '==', schoolDate).select('studentId', 'status').get();
+  return snapshot.docs.map((doc) => {
+    const { studentId, status } = doc.data();
+    return { studentId, status };
+  });
+}
 
 /**
  * Status and creation time ONLY of the notifications created at or after `since` (a Timestamp).

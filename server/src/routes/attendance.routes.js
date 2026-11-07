@@ -3,6 +3,7 @@ import { ROLES, SCAN_METHODS, SCAN_OUTCOMES, SCAN_SOURCE_BY_METHOD } from '@led/
 import { requireAuth } from '../middleware/requireAuth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { getDailyAttendance, processRfidScan, setLateExcuse } from '../services/attendance.service.js';
+import { getAbsenceNotices, sendAbsenceNotices } from '../services/absenceNotice.service.js';
 import { auditContext } from '../services/audit.service.js';
 import { HttpError } from '../utils/httpError.js';
 import { scopeFor } from '../utils/sectionScope.js';
@@ -60,6 +61,17 @@ router.post('/scan', async (req, res) => {
 // Excuses a late arrival (or removes the excuse). Teachers: students in their sections only.
 router.patch('/:attendanceId/late', async (req, res) => {
   res.json(await setLateExcuse(auditContext(req), req.params.attendanceId, req.body, { scope: scopeFor(req) }));
+});
+
+// GET /api/attendance/absence-notices - today's absent students and whether their parents were texted.
+// POST { "studentIds": [...] } - texts the parents of those still absent, after staff confirmed the
+// list. Teachers: their sections only. The text and the numbers are never chosen by the client.
+router.get('/absence-notices', async (req, res) => {
+  res.json(await getAbsenceNotices({ scope: scopeFor(req) }));
+});
+
+router.post('/absence-notices', async (req, res) => {
+  res.json(await sendAbsenceNotices(auditContext(req), req.body, { scope: scopeFor(req) }));
 });
 
 export default router;

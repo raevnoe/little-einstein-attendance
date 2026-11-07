@@ -301,18 +301,18 @@ describe('RFID scans, attendance and SMS', () => {
 
 describe('performance evaluations', () => {
   test('save and edit record star ratings, never the observation text', async () => {
-    const body = { studentId: ANA, evaluationDate: today, area: 'following-directions', starRating: 3, observation: SECRET_OBSERVATION };
+    const body = { studentId: ANA, evaluationDate: today, area: 'language', starRating: 3, observation: SECRET_OBSERVATION };
     assert.equal((await call('POST', '/performance', tokens.teacher, body)).status, 201);
     const created = only('performance.created');
     assertEntry(created, {
-      eventType: 'performance.created', actorUid: 'teacher1', role: 'teacher', target: { type: 'performance', id: `${ANA}_${today}_following-directions` },
+      eventType: 'performance.created', actorUid: 'teacher1', role: 'teacher', target: { type: 'performance', id: `${ANA}_${today}_language` },
     });
     assert.deepEqual(created.details, {
-      studentId: ANA, evaluationDate: today, area: 'following-directions', starRating: 3, previousStarRating: null, observationChanged: true,
+      studentId: ANA, evaluationDate: today, area: 'language', starRating: 3, previousStarRating: null, observationChanged: true,
     });
 
     // Another teacher edits it: the audit keeps who changed what.
-    assert.equal((await call('PATCH', `/performance/${ANA}_${today}_following-directions`, tokens.teacher2, { starRating: 5 })).status, 200);
+    assert.equal((await call('PATCH', `/performance/${ANA}_${today}_language`, tokens.teacher2, { starRating: 5 })).status, 200);
     const updated = only('performance.updated');
     assertEntry(updated, { eventType: 'performance.updated', actorUid: 'teacher2', role: 'teacher' });
     assert.equal(updated.details.previousStarRating, 3);
@@ -322,12 +322,12 @@ describe('performance evaluations', () => {
   });
 
   test('a client cannot supply the evaluator or audit fields', async () => {
-    const body = { studentId: ANA, evaluationDate: today, area: 'self-control', starRating: 2, teacherId: 'admin1', actor: { uid: 'x' } };
+    const body = { studentId: ANA, evaluationDate: today, area: 'science', starRating: 2, teacherId: 'admin1', actor: { uid: 'x' } };
     assert.equal((await call('POST', '/performance', tokens.teacher, body)).status, 400);
     assert.equal(entries().length, 0);
     // A role header changes nothing either.
     const res = await api.call('POST', '/performance', {
-      token: tokens.teacher, headers: { 'X-Role': 'admin' }, body: { studentId: ANA, evaluationDate: today, area: 'self-control', starRating: 2 },
+      token: tokens.teacher, headers: { 'X-Role': 'admin' }, body: { studentId: ANA, evaluationDate: today, area: 'science', starRating: 2 },
     });
     assert.equal(res.status, 201);
     assert.deepEqual(only('performance.created').actor, { type: 'user', uid: 'teacher1', role: 'teacher' });
@@ -419,9 +419,9 @@ describe('failed audit writes', () => {
     assert.ok(!output.includes(SECRET_DOB));
 
     // Performance, RFID assignment and role changes behave the same way.
-    const evaluation = { studentId: ANA, evaluationDate: today, area: 'manners-respect', starRating: 4 };
+    const evaluation = { studentId: ANA, evaluationDate: today, area: 'motor-skills', starRating: 4 };
     assert.equal((await call('POST', '/performance', tokens.teacher, evaluation)).status, 500);
-    assert.equal(api.fake.read('performance', `${ANA}_${today}_manners-respect`), undefined);
+    assert.equal(api.fake.read('performance', `${ANA}_${today}_motor-skills`), undefined);
 
     api.fake.seed('rfidCards', 'E2000017221101441890CCCC', { uid: 'E2000017221101441890CCCC', studentId: null, active: true });
     api.addStudent({ studentId: 'K2026-071', firstName: 'Gia' });

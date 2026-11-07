@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { performanceAreaLabel } from '@led/shared';
+import { useSubjects } from '../../lib/useSubjects.js';
 import { apiRequest } from '../../lib/apiClient.js';
 import { formatDate, formatDayDate } from '../../lib/format.js';
 import Panel, { ErrorMessage, QuietButton } from '../Panel.jsx';
@@ -10,6 +10,7 @@ const DAYS_STEP = 3;
 
 /** One evaluation day: a summary row (date + Daily Average Star Rating) that expands to every area. */
 function EvaluationDay({ day, defaultOpen }) {
+  const { label } = useSubjects();
   return (
     <li>
       <details open={defaultOpen} className="group overflow-hidden rounded-2xl bg-paper ring-1 ring-brand-100 open:shadow-sm">
@@ -35,7 +36,7 @@ function EvaluationDay({ day, defaultOpen }) {
             {day.evaluations.map((e) => (
               <li key={e.area} className="rounded-xl bg-paper p-3 text-sm ring-1 ring-brand-100">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-semibold text-brand-900">{performanceAreaLabel(e.area)}</span>
+                  <span className="font-semibold text-brand-900">{label(e.area)}</span>
                   <StarDisplay value={e.starRating} size="text-lg" showLabel />
                 </div>
                 {e.observation && (

@@ -34,7 +34,7 @@ export const AUDIT_OUTCOMES = Object.freeze({
   DENIED: 'denied',
 });
 
-export const AUDIT_TARGET_TYPES = Object.freeze(['user', 'student', 'section', 'rfidCard', 'attendance', 'performance', 'fetcher', 'dismissal', 'settings', 'route']);
+export const AUDIT_TARGET_TYPES = Object.freeze(['user', 'student', 'section', 'subject', 'rfidCard', 'attendance', 'performance', 'fetcher', 'dismissal', 'settings', 'route']);
 
 // eventType -> { category, label }. Every event the server can record is listed here.
 export const AUDIT_EVENTS = Object.freeze({
@@ -73,6 +73,8 @@ export const AUDIT_EVENTS = Object.freeze({
 
   'performance.created': { category: 'performance', label: 'Evaluation created' },
   'performance.updated': { category: 'performance', label: 'Evaluation updated' },
+  'subject.added': { category: 'performance', label: 'Subject added' },
+  'subject.updated': { category: 'performance', label: 'Subject changed' },
 
   'fetcher.created': { category: 'fetcher', label: 'Pick-up person added' },
   'fetcher.updated': { category: 'fetcher', label: 'Pick-up person updated' },
@@ -85,6 +87,7 @@ export const AUDIT_EVENTS = Object.freeze({
   'dismissal.release-failed': { category: 'dismissal', label: 'Release not completed' },
 
   'sms.attendance-notification': { category: 'sms', label: 'Attendance SMS' },
+  'sms.absence-notices': { category: 'sms', label: 'Absence SMS sent' },
 
   'settings.changed': { category: 'settings', label: 'School settings changed' },
 });

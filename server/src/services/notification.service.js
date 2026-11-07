@@ -6,9 +6,9 @@
 //         -> IPROG (or mock) provider HTTP call
 //
 // Never throws: an SMS problem must never undo or fail an attendance record.
-import { ROLES, normalizePhMobileNumber } from '@led/shared';
+import { ARRIVAL_STATUS, DEPARTURE_STATUS, ROLES, durationText, normalizePhMobileNumber } from '@led/shared';
 import { FieldValue } from 'firebase-admin/firestore';
-import { formatSchoolTime } from '../utils/schoolDate.js';
+import { formatSchoolDateShort, formatSchoolTime, schoolDateOf } from '../utils/schoolDate.js';
 import { NOTIFICATION_EVENTS, NOTIFICATION_STATUS, notificationDocId, notificationsCollection } from '../models/notification.model.js';
 import { findUsersByIds } from '../models/user.model.js';
 import { getSmsSettings } from '../models/systemSettings.model.js';
@@ -17,12 +17,26 @@ import { sendSms } from './sms/sms.service.js';
 const ALREADY_EXISTS = 6; // Firestore gRPC status
 const SCHOOL_NAME = 'Little Einstein Discovery School';
 
-/** Short, parent-friendly text. No RFID UID, account IDs, or other internal data. */
-export function attendanceSmsMessage(event, student, occurredAt) {
+/**
+ * Short, parent-friendly text. No RFID UID, account IDs, or other internal data. A late arrival or
+ * early pick-up (decided and stored on the attendance record) is said in words: "(1 hour 5 min late)".
+ */
+export function attendanceSmsMessage(event, student, occurredAt, record = null) {
   const name = [student.firstName, student.lastName].filter(Boolean).join(' ');
+  if (event === NOTIFICATION_EVENTS.ABSENCE) {
+    return `${SCHOOL_NAME}: ${name} was marked absent today (${formatSchoolDateShort(schoolDateOf(occurredAt))}). Please contact the school if this is a mistake.`;
+  }
   const time = formatSchoolTime(occurredAt);
-  return event === NOTIFICATION_EVENTS.ARRIVAL
-    ? `${SCHOOL_NAME}: ${name} has arrived at school at ${time}.`
+  const minutes = (value) => (Number.isFinite(value) && value >= 1 ? value : null);
+  if (event === NOTIFICATION_EVENTS.ARRIVAL) {
+    const late = record?.arrivalStatus === ARRIVAL_STATUS.LATE ? minutes(record.lateMinutes) : null;
+    return late
+      ? `${SCHOOL_NAME}: ${name} arrived at school at ${time} (${durationText(late)} late).`
+      : `${SCHOOL_NAME}: ${name} has arrived at school at ${time}.`;
+  }
+  const early = record?.departureStatus === DEPARTURE_STATUS.EARLY ? minutes(record.earlyMinutes) : null;
+  return early
+    ? `${SCHOOL_NAME}: ${name} was picked up early at ${time} (${durationText(early)} before class ended).`
     : `${SCHOOL_NAME}: ${name} was picked up at ${time}.`;
 }
 
@@ -92,13 +106,14 @@ async function recordSkipped(base, reason) {
 }
 
 /**
- * Texts the student's parents about an arrival/departure. Call ONLY after the attendance
- * transaction has committed. Returns a summary without phone numbers, for staff display:
+ * Texts the student's parents about an arrival/departure (call ONLY after the attendance
+ * transaction has committed) or a staff-confirmed absence (absenceNotice.service.js).
+ * Returns a summary without phone numbers, for staff display:
  *   { event, status: sent | partial | failed | skipped | already-notified | off | opted-out, recipients, sent, failed }
  * `off` = turned off in School Settings; `opted-out` = every parent with a number turned them off.
  * Neither is a problem, so neither writes a notifications record.
  */
-export async function notifyAttendanceEvent({ event, student, attendanceId, occurredAt }) {
+export async function notifyAttendanceEvent({ event, student, attendanceId, occurredAt, record = null, schoolDate = null }) {
   const summary = { event, status: NOTIFICATION_STATUS.FAILED, recipients: 0, sent: 0, failed: 0 };
   try {
     const { attendanceSmsEnabled, allowParentSmsOptOut } = await getSmsSettings();
@@ -108,7 +123,8 @@ export async function notifyAttendanceEvent({ event, student, attendanceId, occu
       attendanceId,
       event,
       channel: 'sms',
-      message: attendanceSmsMessage(event, student, occurredAt),
+      message: attendanceSmsMessage(event, student, occurredAt, record),
+      ...(schoolDate ? { schoolDate } : {}),
     };
     const recipients = await parentRecipients(student.parentIds ?? [], { honourOptOut: allowParentSmsOptOut });
     if (recipients.length === 0 && recipients.optedOut > 0) return { ...summary, status: 'opted-out' };

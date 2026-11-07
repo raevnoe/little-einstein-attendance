@@ -130,13 +130,13 @@ describe('teacher scope', () => {
   });
 
   test('performance: save and read own sections only', async () => {
-    const body = (studentId) => ({ studentId, evaluationDate: today, area: 'following-directions', starRating: 4, observation: '' });
+    const body = (studentId) => ({ studentId, evaluationDate: today, area: 'language', starRating: 4, observation: '' });
     assert.equal((await call('POST', '/performance', t.teacherA, body(BEN))).status, 404);
     assert.equal((await call('POST', '/performance', t.teacherA, body(ANA))).status, 201);
     assert.equal((await call('POST', '/performance', t.admin, body(BEN))).status, 201);
     assert.deepEqual(ids((await call('GET', '/performance', t.teacherA)).body.evaluations), [ANA]);
-    assert.equal((await call('GET', `/performance/${BEN}_${today}_following-directions`, t.teacherA)).status, 404);
-    assert.equal((await call('PATCH', `/performance/${BEN}_${today}_following-directions`, t.teacherA, { starRating: 1 })).status, 404);
+    assert.equal((await call('GET', `/performance/${BEN}_${today}_language`, t.teacherA)).status, 404);
+    assert.equal((await call('PATCH', `/performance/${BEN}_${today}_language`, t.teacherA, { starRating: 1 })).status, 404);
   });
 
   test('reports: counts and section filters cover own sections only', async () => {

@@ -1882,12 +1882,24 @@ On-screen wording (developer request, 2026-11-02, after the panel ruled the eval
 
 * SCREEN TEXT ONLY: Performance Evaluation -> **Behavioral Evaluation** (nav "Behavior"); Time in -> **Arrived**; Time out / Went home ->
   **Picked up**; No time in -> **Not arrived** (reports: "No arrival recorded"); May collect -> **Can pick up**; Fetcher -> **pick-up person**
-  ("Pick-up People", "Pick-up & Dismissal"). Departure SMS: "<name> was picked up at <time>." Server error messages, inbox texts and
+  ("Pick-up People", "Pick-up & Dismissal"). Departure SMS: "<name> was picked up at <time>." Since 2026-11-06 (panel revision) the SMS
+  also says a STORED late arrival / early pick-up in words: "arrived at school at 9:20 AM (1 hour 5 min late)", "was picked up early
+  at 10:15 AM (1 hour 15 min before class ended)" (`attendanceSmsMessage`, shared `durationText`). Server error messages, inbox texts and
   audit labels follow. CODE NAMES ARE UNCHANGED (collection `performance`, `/api/performance`, `fetchers`, PERFORMANCE_* constants,
   Fetcher* components): new UI text must use the new words, code keeps the old names.
-* Behavior areas (shared/src/performance.js): following-directions, sharing-cooperation, self-control, class-participation,
-  manners-respect, independence. The old academic areas (language, mathematics, science, social-skills, motor-skills,
-  classroom-behavior) can no longer be chosen; old records still show their names (RETIRED_AREA_LABELS). Quick phrases rewritten.
+* Areas = the original SUBJECTS again (developer, 2026-11-06: behavior is evaluated in every subject, with stars and comments):
+  language, mathematics, science, social-skills, motor-skills, classroom-behavior; screen label "Subject". The behavior areas used
+  2026-11-02..06 can no longer be chosen; records saved under them still show their names (RETIRED_AREA_LABELS).
+* Subjects are ADMIN-MANAGED (developer request, 2026-11-06; PENDING developer browser test): `systemSettings/subjects`
+  { subjects: [{ key, label, hidden }] } (array order = screen order; model `models/subject.model.js`, 30 s cache; until saved =
+  shared DEFAULT_SUBJECTS = the six above). `GET /api/subjects` (every role), admin `POST /api/admin/subjects { label }` (key made
+  from the name, fixed forever; 409 duplicate name / more than MAX_SUBJECTS 20) and `PATCH /api/admin/subjects/:key { label? |
+  hidden? | move: up|down }` (409 hiding the last visible one). No delete. Audited `subject.added` / `subject.updated` (category
+  performance, target type subject, details subject + changes). A HIDDEN subject: past evaluations still show (records, parent view,
+  reports, report filter) and can be edited; a NEW evaluation is refused (400). Evaluation keys = SUBJECT_KEY_PATTERN (digits allowed).
+  Client: `lib/useSubjects.js` (shared module cache; starting list until loaded; `setSubjects` after admin changes),
+  (admin only) Behavioral Evaluation -> Subjects tab (`components/performance/SubjectsManager.jsx`; developer moved it out of Settings), the evaluation form lists visible subjects + hidden ones already rated
+  that day; filters mark hidden ones "(hidden)". Tests: `server/test/subjects.test.js` (9).
 * Tests updated to the new keys and texts (server 222, client 128 pass). The paper is NOT changed by Claude (developer handles it).
 
 Absent, class end time, early pick-up, parent calendar, designed email (developer request, 2026-11-02; PENDING developer browser
@@ -1912,6 +1924,25 @@ test). Developer decisions: absent AFTER the class end time; class days Mon-Fri 
 * Email: `docs/email-templates/password-reset.html` (tables + inline styles, logo from the Hosting icons) to paste into Firebase
   Console -> Authentication -> Templates -> Password reset; one design for account setup AND forgot password.
 * Tests: server/test/absent.test.js (8, fixed September 2026 dates); report/today tests check calendar-dependent counts separately.
+
+Absence SMS (developer request, 2026-11-07; developer chose the staff-confirmed button over a scheduled job; PENDING developer test):
+
+* Why not automatic: Vercel Hobby cron runs once a day at an inexact time (cannot follow section end times), and a wrong "absent"
+  text is worse than a late one (reader down, forgotten card). A person ALWAYS confirms.
+* `services/absenceNotice.service.js`; `GET /api/attendance/absence-notices` (admin + teacher, teachers their sections only): today's
+  ACTIVE students with status absent + `notice` pending|sent|failed|no-number|opted-out, plus `smsEnabled`; no phone numbers.
+  `POST { studentIds }` (no other field; text and numbers never come from the client): absent is worked out AGAIN, only chosen +
+  still absent + pending + in scope are texted (none left -> 409 `attendance/no-absence-notices`; school switch off -> 409
+  `attendance/sms-off`). Sent 10 at a time through notifyAttendanceEvent (event `absence`, `notifications` record with `schoolDate`,
+  found by `findAbsenceNoticesOn`). The deterministic ID = one text per number per child per day. Same on/off switch and parent opt-out
+  as arrival/departure. One audit entry per send: `sms.absence-notices` (actor = the staff member; students, studentIds, sent, failed).
+* Text: "<school>: <name> was marked absent today (Sep 14). Please contact the school if this is a mistake."
+* Client: `components/attendance/AbsenceNotices.jsx` on today's Attendance list when absent > 0: tick list (all ticked), "Send absence
+  SMS (n)", InlineConfirm. Other states are badges (Parent notified / SMS failed: please call / No mobile number: please call / Parent
+  turned off SMS).
+* Known limitations: a FAILED text cannot be re-sent (staff call the parent; sendOnce claims the slot, and a retry after a timeout could
+  double-send); today only; no bell item for the parent (the month calendar already shows Absent).
+* Tests: `server/test/absenceNotices.test.js` (clock fixed with mock timers to Monday 2026-09-14, 2 PM Manila).
 
 Validation pass (developer request, 2026-11-02; PENDING developer browser test). Shared rules in `shared/src/validation.js`:
 
