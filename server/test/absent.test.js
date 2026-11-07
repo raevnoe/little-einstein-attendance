@@ -131,7 +131,7 @@ describe('daily attendance', () => {
 describe('school calendar (admin)', () => {
   test('only admins read or change it; it is validated and audited', async () => {
     assert.equal((await call('GET', '/admin/calendar', tokens.teacher)).status, 403);
-    assert.deepEqual((await call('GET', '/admin/calendar', tokens.admin)).body.calendar, CALENDAR);
+    assert.deepEqual((await call('GET', '/admin/calendar', tokens.admin)).body.calendar, { ...CALENDAR, extraClassDates: [] });
 
     for (const body of [
       { schoolYearStart: '2026-02-30' },
@@ -151,6 +151,33 @@ describe('school calendar (admin)', () => {
     assert.deepEqual(res.body.calendar.noClassDates[0], { date: '2026-09-04', reason: 'Typhoon suspension' });
     const entry = entries('settings.changed').find((e) => e.target.id === 'calendar');
     assert.deepEqual(entry.details.changes, ['added 2026-09-04']);
+  });
+});
+
+describe('extra class days', () => {
+  const save = (extraClassDates, noClassDates = CALENDAR.noClassDates) =>
+    call('PUT', '/admin/calendar', tokens.admin, { schoolYearStart: CALENDAR.schoolYearStart, noClassDates, extraClassDates });
+
+  test('a listed Saturday is a class day: no record = absent; other weekends stay no class', async () => {
+    const res = await save([{ date: '2026-09-05', reason: 'Make-up class' }]);
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.calendar.extraClassDates, [{ date: '2026-09-05', reason: 'Make-up class' }]);
+    assert.ok(entries('settings.changed').some((e) => e.details.changes.includes('added extra class day 2026-09-05')));
+    const { body } = await call('GET', `/parent/children/${ANA}/calendar?month=2026-09`, tokens.parentA);
+    const day = (d) => body.calendar.days.find((x) => x.date === `2026-09-${d}`);
+    assert.equal(day('05').status, 'absent');
+    assert.equal(day('12').status, 'no-class');
+    assert.equal(day('12').note, 'Weekend');
+    assert.equal((await call('GET', '/attendance?date=2026-09-05', tokens.admin)).body.noClass, null);
+  });
+
+  test('only weekends, once each, and never also a no-class date', async () => {
+    assert.equal((await save([{ date: '2026-09-07' }])).status, 400); // a Monday
+    assert.equal((await save([{ date: '2026-09-05' }, { date: '2026-09-05' }])).status, 400);
+    assert.equal((await save([{ date: 'soon' }])).status, 400);
+    assert.equal((await save('2026-09-05')).status, 400);
+    assert.equal((await save([{ date: '2026-09-05' }], [{ date: '2026-09-05', reason: 'Holiday' }])).status, 400);
+    assert.equal((await call('PUT', '/admin/calendar', tokens.teacher, { extraClassDates: [] })).status, 403);
   });
 });
 

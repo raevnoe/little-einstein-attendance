@@ -1925,6 +1925,11 @@ test). Developer decisions: absent AFTER the class end time; class days Mon-Fri 
   Console -> Authentication -> Templates -> Password reset; one design for account setup AND forgot password.
 * Tests: server/test/absent.test.js (8, fixed September 2026 dates); report/today tests check calendar-dependent counts separately.
 
+Extra class days (developer request, 2026-11-07, to show absences on a weekend; PENDING developer browser test):
+`systemSettings/calendar.extraClassDates` [{ date, reason }]: a Saturday or Sunday that counts as a class day (`noClassReason`). Saved with
+the calendar (`PUT /api/admin/calendar`); only weekends, not also a no-class date, audited "added extra class day <date>". Other weekends stay
+No class. Client: Settings -> School calendar -> Extra class days (`DateList` in SchoolCalendarForm.jsx, shared with No-class dates).
+
 Absence SMS (developer request, 2026-11-07; developer chose the staff-confirmed button over a scheduled job; PENDING developer test):
 
 * Why not automatic: Vercel Hobby cron runs once a day at an inexact time (cannot follow section end times), and a wrong "absent"

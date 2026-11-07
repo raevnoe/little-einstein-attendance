@@ -53,12 +53,13 @@ router.patch('/settings', async (req, res) => {
   res.json(await updateSchoolSettings(auditContext(req), req.body));
 });
 
-// GET /api/admin/calendar - class days: { calendar: { schoolYearStart, noClassDates: [{ date, reason }] } }.
+// GET /api/admin/calendar - class days: { calendar: { schoolYearStart, noClassDates, extraClassDates } }
+// (both lists are [{ date, reason }]).
 router.get('/calendar', async (req, res) => {
   res.json(await readSchoolCalendar());
 });
 
-// PUT /api/admin/calendar { schoolYearStart, noClassDates } - replaces the calendar (audited).
+// PUT /api/admin/calendar { schoolYearStart, noClassDates, extraClassDates } - replaces the calendar (audited).
 router.put('/calendar', async (req, res) => {
   res.json(await updateSchoolCalendar(auditContext(req), req.body));
 });

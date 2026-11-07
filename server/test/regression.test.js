@@ -53,7 +53,7 @@ test('RFID scan: time-in, time-out, then already-completed; arrival/departure SM
   assert.equal(again.body.error.code, 'attendance/already-completed');
 
   assert.equal(sms.sent.length, 2);
-  assert.match(sms.sent[0].message, /Ana Test has arrived/);
+  assert.match(sms.sent[0].message, /Ana Test (has )?arrived at school/);
   assert.match(sms.sent[1].message, /Ana Test was picked up/);
   assert.equal(api.fake.all('attendance').length, 1);
   assert.equal(api.fake.read('attendance', `K2026-001_${today}`).status, 'checked-out');

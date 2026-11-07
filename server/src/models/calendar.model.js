@@ -1,7 +1,9 @@
 // The school calendar used for Absent: `systemSettings/calendar`
-//   { schoolYearStart: "YYYY-MM-DD" | null, noClassDates: [{ date: "YYYY-MM-DD", reason }], updatedAt }
+//   { schoolYearStart: "YYYY-MM-DD" | null, noClassDates: [{ date: "YYYY-MM-DD", reason }],
+//     extraClassDates: [{ date: "YYYY-MM-DD", reason }], updatedAt }
 // Class days are Monday to Friday (shared CLASS_WEEKDAYS) minus `noClassDates` (holidays,
-// suspensions), and never before `schoolYearStart`. Changed only by admins (services/calendar.service.js).
+// suspensions), plus `extraClassDates` (a Saturday or Sunday with class, e.g. a make-up class), and
+// never before `schoolYearStart`. Changed only by admins (services/calendar.service.js).
 // Cached for 30 s per server instance like the other settings; saving clears this instance's cache.
 import { COLLECTIONS } from '@led/shared';
 import { db } from '../config/firebaseAdmin.js';
@@ -12,13 +14,18 @@ export const calendarRef = () => db.collection(COLLECTIONS.SYSTEM_SETTINGS).doc(
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+const parseDates = (list) => (Array.isArray(list) ? list : [])
+  .filter((d) => d && DATE.test(d.date))
+  .map((d) => ({ date: d.date, reason: typeof d.reason === 'string' ? d.reason : '' }))
+  .sort((a, b) => a.date.localeCompare(b.date));
+
 /** The stored calendar, cleaned: invalid entries are dropped, dates sorted. */
 export function parseCalendar(data) {
-  const noClassDates = (Array.isArray(data?.noClassDates) ? data.noClassDates : [])
-    .filter((d) => d && DATE.test(d.date))
-    .map((d) => ({ date: d.date, reason: typeof d.reason === 'string' ? d.reason : '' }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-  return { schoolYearStart: DATE.test(data?.schoolYearStart ?? '') ? data.schoolYearStart : null, noClassDates };
+  return {
+    schoolYearStart: DATE.test(data?.schoolYearStart ?? '') ? data.schoolYearStart : null,
+    noClassDates: parseDates(data?.noClassDates),
+    extraClassDates: parseDates(data?.extraClassDates),
+  };
 }
 
 let cached = null;

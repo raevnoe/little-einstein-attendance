@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NO_CLASS_REASON_MAX_LENGTH } from '@led/shared';
+import { CLASS_WEEKDAYS, NO_CLASS_REASON_MAX_LENGTH, weekdayOf } from '@led/shared';
 import { apiRequest } from '../../lib/apiClient.js';
 import { useApiData } from '../../lib/useApiData.js';
 import { formatDate } from '../../lib/format.js';
@@ -10,7 +10,8 @@ import { CalendarIcon, CloseIcon } from '../ui/icons.jsx';
 
 /**
  * School calendar (admin): which days count for Absent. Classes are Monday to Friday; the admin sets
- * the first day of the school year and adds no-class dates (holidays, suspensions). Saved as a whole.
+ * the first day of the school year, adds no-class dates (holidays, suspensions) and extra class days
+ * (a Saturday or Sunday with class). Saved as a whole.
  */
 export default function SchoolCalendarForm() {
   const { loading, data, error, reload } = useApiData('/admin/calendar');
@@ -22,31 +23,22 @@ export default function SchoolCalendarForm() {
 function CalendarEditor({ initial }) {
   const [start, setStart] = useState(initial.schoolYearStart ?? '');
   const [dates, setDates] = useState(initial.noClassDates);
-  const [newDate, setNewDate] = useState('');
-  const [newReason, setNewReason] = useState('');
+  const [extraDates, setExtraDates] = useState(initial.extraClassDates);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
 
-  const dirty = (start || null) !== initial.schoolYearStart || JSON.stringify(dates) !== JSON.stringify(initial.noClassDates);
+  const dirty = (start || null) !== initial.schoolYearStart
+    || JSON.stringify(dates) !== JSON.stringify(initial.noClassDates)
+    || JSON.stringify(extraDates) !== JSON.stringify(initial.extraClassDates);
 
-  function addDate(event) {
-    event.preventDefault();
-    if (!newDate) return;
-    if (dates.some((d) => d.date === newDate)) {
-      setMessage({ tone: 'error', text: `${formatDate(newDate)} is already on the list.` });
-      return;
-    }
-    setDates((list) => [...list, { date: newDate, reason: newReason.trim() }].sort((a, b) => a.date.localeCompare(b.date)));
-    setNewDate('');
-    setNewReason('');
-    setMessage(null);
-  }
+  const showError = (text) => setMessage(text ? { tone: 'error', text } : null);
+  const isWeekday = (date) => CLASS_WEEKDAYS.includes(weekdayOf(date));
 
   async function save() {
     setBusy(true);
     setMessage(null);
     try {
-      await apiRequest('/admin/calendar', { method: 'PUT', body: { schoolYearStart: start || null, noClassDates: dates } });
+      await apiRequest('/admin/calendar', { method: 'PUT', body: { schoolYearStart: start || null, noClassDates: dates, extraClassDates: extraDates } });
       setMessage({ tone: 'success', text: 'School calendar saved. Absences now follow it.' });
     } catch (err) {
       setMessage({ tone: 'error', text: err.message });
@@ -68,41 +60,31 @@ function CalendarEditor({ initial }) {
           <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className={inputClass({ className: 'sm:max-w-56' })} />
         </Field>
 
-        <div className="border-t border-brand-100 pt-4">
-          <p className="text-sm font-semibold text-brand-900">No-class dates</p>
-          <p className="text-sm text-brand-500">Holidays, suspensions and other days without class.</p>
-          {dates.length === 0 ? (
-            <p className="mt-3 text-sm text-brand-700">None yet.</p>
-          ) : (
-            <ul className="mt-3 divide-y divide-brand-50 rounded-xl ring-1 ring-brand-100">
-              {dates.map((d) => (
-                <li key={d.date} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                  <span className="text-sm text-brand-900">
-                    <strong>{formatDate(d.date)}</strong>
-                    {d.reason && <span className="text-brand-700"> · {d.reason}</span>}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setDates((list) => list.filter((x) => x.date !== d.date))}
-                    aria-label={`Remove ${formatDate(d.date)}`}
-                    className="rounded-lg p-1.5 text-brand-500 hover:bg-red-50 hover:text-red-700"
-                  >
-                    <CloseIcon className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <form onSubmit={addDate} className="mt-3 flex flex-wrap items-end gap-2">
-            <Field id="calendar-new-date" label="Date">
-              <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className={inputClass({ className: 'w-auto' })} />
-            </Field>
-            <Field id="calendar-new-reason" label="Reason" optional className="min-w-48 flex-1">
-              <input value={newReason} maxLength={NO_CLASS_REASON_MAX_LENGTH} onChange={(e) => setNewReason(e.target.value)} placeholder="e.g. Christmas break" className={inputClass()} />
-            </Field>
-            <Button type="submit" variant="secondary" disabled={!newDate}>Add date</Button>
-          </form>
-        </div>
+        <DateList
+          id="calendar-no-class"
+          title="No-class dates"
+          hint="Holidays, suspensions and other days without class."
+          placeholder="e.g. Christmas break"
+          addLabel="Add date"
+          dates={dates}
+          onChange={setDates}
+          onError={showError}
+          problem={(date) => (extraDates.some((d) => d.date === date) ? `${formatDate(date)} is an extra class day.` : null)}
+        />
+        <DateList
+          id="calendar-extra"
+          title="Extra class days"
+          hint="A Saturday or Sunday with class, such as a make-up class. It counts like any class day: a child who does not arrive is marked absent."
+          placeholder="e.g. Make-up class"
+          addLabel="Add class day"
+          dates={extraDates}
+          onChange={setExtraDates}
+          onError={showError}
+          problem={(date) => {
+            if (isWeekday(date)) return `${formatDate(date)} is already a class day. Pick a Saturday or Sunday.`;
+            return dates.some((d) => d.date === date) ? `${formatDate(date)} is a no-class date.` : null;
+          }}
+        />
 
         <div className="flex flex-wrap items-center gap-3 border-t border-brand-100 pt-4">
           <Button busy={busy} busyLabel="Saving…" disabled={!dirty} onClick={save}>Save school calendar</Button>
@@ -111,5 +93,63 @@ function CalendarEditor({ initial }) {
         {message && <Alert tone={message.tone}>{message.text}</Alert>}
       </div>
     </Card>
+  );
+}
+
+/** A list of dates with optional reasons, and the small form that adds to it. */
+function DateList({ id, title, hint, placeholder, addLabel, dates, onChange, onError, problem }) {
+  const [newDate, setNewDate] = useState('');
+  const [newReason, setNewReason] = useState('');
+
+  function addDate(event) {
+    event.preventDefault();
+    if (!newDate) return;
+    const refused = dates.some((d) => d.date === newDate) ? `${formatDate(newDate)} is already on the list.` : problem(newDate);
+    if (refused) {
+      onError(refused);
+      return;
+    }
+    onChange([...dates, { date: newDate, reason: newReason.trim() }].sort((a, b) => a.date.localeCompare(b.date)));
+    setNewDate('');
+    setNewReason('');
+    onError(null);
+  }
+
+  return (
+    <div className="border-t border-brand-100 pt-4">
+      <p className="text-sm font-semibold text-brand-900">{title}</p>
+      <p className="text-sm text-brand-500">{hint}</p>
+      {dates.length === 0 ? (
+        <p className="mt-3 text-sm text-brand-700">None yet.</p>
+      ) : (
+        <ul className="mt-3 divide-y divide-brand-50 rounded-xl ring-1 ring-brand-100">
+          {dates.map((d) => (
+            <li key={d.date} className="flex items-center justify-between gap-3 px-4 py-2.5">
+              <span className="text-sm text-brand-900">
+                <strong>{formatDate(d.date)}</strong>
+                {d.reason && <span className="text-brand-700"> · {d.reason}</span>}
+              </span>
+              <button
+                type="button"
+                onClick={() => onChange(dates.filter((x) => x.date !== d.date))}
+                aria-label={`Remove ${formatDate(d.date)}`}
+                className="rounded-lg p-1.5 text-brand-500 hover:bg-red-50 hover:text-red-700"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={addDate} className="mt-3 flex flex-wrap items-end gap-2">
+        <Field id={`${id}-date`} label="Date">
+          <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className={inputClass({ className: 'w-auto' })} />
+        </Field>
+        <Field id={`${id}-reason`} label="Reason" optional className="min-w-48 flex-1">
+          <input value={newReason} maxLength={NO_CLASS_REASON_MAX_LENGTH} onChange={(e) => setNewReason(e.target.value)} placeholder={placeholder} className={inputClass()} />
+        </Field>
+        <Button type="submit" variant="secondary" disabled={!newDate}>{addLabel}</Button>
+      </form>
+    </div>
   );
 }

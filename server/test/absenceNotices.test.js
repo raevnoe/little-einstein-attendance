@@ -136,6 +136,25 @@ describe('sending', () => {
     assert.equal((await call('POST', t.admin, { studentIds: [ANA] })).status, 409);
   });
 
+  test('no list on a weekend, unless it is an extra class day', async () => {
+    const saturday = new Date('2026-09-19T06:00:00Z');
+    const { clearCalendarCache } = await import('../src/models/calendar.model.js');
+    mock.timers.setTime(saturday.getTime());
+    try {
+      clearCalendarCache();
+      assert.deepEqual((await call('GET', t.admin)).body.students, []);
+      api.fake.seed('systemSettings', 'calendar', { extraClassDates: [{ date: '2026-09-19', reason: 'Make-up class' }] });
+      clearCalendarCache();
+      const res = await call('GET', t.admin);
+      assert.equal(res.body.schoolDate, '2026-09-19');
+      assert.equal(noticeOf(res, ANA), 'pending');
+    } finally {
+      mock.timers.setTime(new Date('2026-09-14T06:00:00Z').getTime());
+      api.fake.clear('systemSettings');
+      clearCalendarCache();
+    }
+  });
+
   test('bad requests are refused', async () => {
     assert.equal((await call('POST', t.admin, {})).status, 400);
     assert.equal((await call('POST', t.admin, { studentIds: [] })).status, 400);

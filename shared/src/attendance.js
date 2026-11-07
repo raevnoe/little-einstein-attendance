@@ -112,7 +112,9 @@ export const weekdayOf = (schoolDate) => new Date(`${schoolDate}T12:00:00Z`).get
 /** null for a class day, else a short reason ("Weekend", "Before the school year", or the holiday name). */
 export function noClassReason(schoolDate, calendar = {}) {
   if (calendar.schoolYearStart && schoolDate < calendar.schoolYearStart) return 'Before the school year';
-  if (!CLASS_WEEKDAYS.includes(weekdayOf(schoolDate))) return 'Weekend';
+  // A weekend counts only when the admin listed it as an extra class day (e.g. a make-up class).
+  const extra = (calendar.extraClassDates ?? []).some((d) => d.date === schoolDate);
+  if (!CLASS_WEEKDAYS.includes(weekdayOf(schoolDate)) && !extra) return 'Weekend';
   const holiday = (calendar.noClassDates ?? []).find((d) => d.date === schoolDate);
   return holiday ? (holiday.reason || 'No class') : null;
 }
